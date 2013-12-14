@@ -3,11 +3,11 @@ var Url = require('url');
 var path = require('path');
 var fs = require('fs');
 
-require(path.resolve("./Modules/Node/Utils.js"));
-var RouterModule = require(path.resolve("./Modules/Node/Router.js"));
-require(path.resolve("./Modules/Channels.js"));
-var channelsClient = require(path.resolve("./Modules/Node/ChannelsClient.js"));
-var Files = require(path.resolve("./Modules/Node/Files.js"));
+require(path.resolve("./ILAB/Modules/Node/Utils.js"));
+var RouterModule = require(path.resolve("./ILAB/Modules/Node/Router.js"));
+require(path.resolve("./ILAB/Modules/Channels.js"));
+var channelsClient = require(path.resolve("./ILAB/Modules/Node/ChannelsClient.js"));
+var Files = require(path.resolve("./ILAB/Modules/Node/Files.js"));
 
 AdminServer = {
 	Init : function(config, localRouter, router, logger){

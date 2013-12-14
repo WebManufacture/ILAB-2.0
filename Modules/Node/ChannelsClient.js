@@ -1,9 +1,9 @@
 var paths = require('path');
-require(paths.resolve('./Modules/Channels.js'));
-log = require(paths.resolve('./Modules/Node/Logger.js')).log;
-error = require(paths.resolve('./Modules/Node/Logger.js')).error;
-info = require(paths.resolve('./Modules/Node/Logger.js')).info;
-debug = require(paths.resolve('./Modules/Node/Logger.js')).debug;
+require(paths.resolve('./ILAB/Modules/Channels.js'));
+log = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).log;
+error = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).error;
+info = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).info;
+debug = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).debug;
 
 HttpChannelsClient = {	
 	GET :  function(context){

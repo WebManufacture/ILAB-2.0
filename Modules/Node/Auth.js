@@ -2,8 +2,8 @@ var url = require('url');
 var crypto = require('crypto');
 ObjectID = require('mongodb').ObjectID;
 var Path = require('path');
-require(Path.resolve("./Modules/Node/Mongo.js"));
-require(Path.resolve("./Modules/Node/Logger.js"));
+require(Path.resolve("./ILAB/Modules/Node/Mongo.js"));
+require(Path.resolve("./ILAB/Modules/Node/Logger.js"));
 
 module.exports = function(config){
 	if (!config.dbname) config.dbname = "Accounts";
