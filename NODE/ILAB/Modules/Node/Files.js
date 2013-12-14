@@ -2,8 +2,8 @@ var fs = require('fs');
 var paths = require('path');
 var ChildProcess = require('child_process');
 var crypto = require('crypto');
-require(paths.resolve('./Modules/Channels.js'));
-require(paths.resolve('./Modules/Node/Logger.js'));
+require(paths.resolve('./ILAB/Modules/Channels.js'));
+require(paths.resolve('./ILAB/Modules/Node/Logger.js'));
 
 
 module.exports = function(config, server){
@@ -48,12 +48,14 @@ FilesRouter = function(cfg){
 			req: req,
 			res: res,
 			url: url,
+			etag: url.etag,
 			pathTail : url.pathname,
 			finish: function(header, body, ext){
 				this.res.statusCode = header;
 				this.res.end(body, ext);
 			},
-			"continue" : function(){}
+			"continue" : function(param){
+			}
 		}
 		if (typeof this[req.method] == "function"){
 			return this[req.method](context);
@@ -76,15 +78,6 @@ FilesRouter = function(cfg){
 	this.SEARCH = function(context){
 		return router._SEARCH(context);
 	}
-	this.LastFiles = {};
-	var files = this;
-	this.watcher = fs.watch(paths.resolve(cfg.basepath), {}, function(event, fname){
-		delete files.LastFiles[fname];		
-		Channels.emit("/file-system." + files.instanceId + "/action." + event, fname.replace(cfg.basepath, ""), files.instanceId, cfg.basepath);
-	});
-	process.on("exit", function(){
-		files.watcher.close();
-	});
 };
 
 FilesRouter.prototype.FormatPath = function(fpath){
@@ -99,12 +92,6 @@ FilesRouter.prototype.FormatPath = function(fpath){
 FilesRouter.prototype._GET = FilesRouter.prototype._HEAD = function(context){	
 	if (context.completed) return true;
 	var fpath = this.FormatPath(context.pathTail);
-	var inm = context.req.headers["if-none-match"];
-	//console.log("Cache: " + inm + " " +  LastFiles[fpath]);
-	if (inm && this.LastFiles[fpath] == inm){
-		context.finish(304, null);
-		return;
-	}
 	var ext = paths.extname(fpath);		
 	ext = ext.replace(".", "");
 	ext = Files.MimeTypes[ext];
@@ -127,12 +114,10 @@ FilesRouter.prototype._GET = FilesRouter.prototype._HEAD = function(context){
 		}	
 		fpath = paths.resolve(fpath);
 		var dnow = new Date();
-		var etag = router.LastFiles[fpath];
+		var etag = context.etag;
 		if (!etag){
-			var etag = (Math.random() + "").replace("0.", "");
-			router.LastFiles[fpath] = etag;
-			//console.log(etag);
-		}		
+			etag = (Math.random() + "").replace("0.", "");
+		}
 		context.res.setHeader("Expires", new Date(dnow.valueOf() + 1000 * 3600).toString());
 		context.res.setHeader("Cache-Control", "max-age=3600");
 		context.res.setHeader("ETag", etag);
@@ -167,7 +152,6 @@ FilesRouter.prototype._SEARCH = function(context){
 FilesRouter.prototype._DELETE = function(context){
 	if (context.completed) return true;
 	var fpath = this.FormatPath(context.pathTail);
-	delete this.LastFiles[paths.resolve(fpath)];
 	var files = this;
 	fs.exists(paths.resolve(fpath), function(exists){
 		if (!exists){
@@ -195,7 +179,6 @@ FilesRouter.prototype._POST = FilesRouter.prototype._PUT = function(context){
 	var fpath = this.FormatPath(context.pathTail);
 	var fullData = "";
 	//console.log("updating cache: " + fpath + " " + this.LastFiles[fpath]);
-	delete this.LastFiles[paths.resolve(fpath)];
 	var files = this;
 	var writeFunc = function(){
 		info("Writing " + fpath);

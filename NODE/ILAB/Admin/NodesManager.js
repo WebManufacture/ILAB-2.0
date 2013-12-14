@@ -1,9 +1,9 @@
 var http = require('http');
 var Url = require('url');
 var path = require('path');
-require(path.resolve("./Modules/Node/Utils.js"));
-require(path.resolve("./Modules/Channels.js"));
-var logger = require(path.resolve("./Modules/Node/Logger.js"));
+require(path.resolve("./ILAB/Modules/Node/Utils.js"));
+require(path.resolve("./ILAB/Modules/Channels.js"));
+var logger = require(path.resolve("./ILAB/Modules/Node/Logger.js"));
 
 NodesRouter = {
 	Handler: {

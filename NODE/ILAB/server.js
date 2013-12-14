@@ -1,13 +1,13 @@
 var http = require('http');
 var Url = require('url');
 var Path = require('path');
-require(Path.resolve("./Modules/Node/Utils.js"));
-var logger = require(Path.resolve("./Modules/Node/Logger.js"));
-var Forks = require(Path.resolve("./Modules/Node/Forks.js"));
-var Files = require(Path.resolve("./Modules/Node/Files.js"));
-require(Path.resolve("./Modules/Channels.js"));
-var channelsClient = require(Path.resolve("./Modules/Node/ChannelsClient.js"));
-var DBProc = require(Path.resolve("./Modules/Node/DBProc.js"));
+require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
+var logger = require(Path.resolve("./ILAB/Modules/Node/Logger.js"));
+var Forks = require(Path.resolve("./ILAB/Modules/Node/Forks.js"));
+var Files = require(Path.resolve("./ILAB/Modules/Node/Files.js"));
+require(Path.resolve("./ILAB/Modules/Channels.js"));
+var channelsClient = require(Path.resolve("./ILAB/Modules/Node/ChannelsClient.js"));
+var DBProc = require(Path.resolve("./ILAB/Modules/Node/DBProc.js"));
 var fs = require('fs');
 var httpProxy = require('http-proxy');
 var colors = require('colors');
@@ -492,7 +492,7 @@ ILabRouter.CreateServer = function (Port){
 }
 
 ILabRouter.CreateRouter = function(port, host, config){
-	var router = require(Path.resolve("./Modules/Node/Router.js"))();
+	var router = require(Path.resolve("./ILAB/Modules/Node/Router.js"))();
 	router.map("Security", {});
 	router.map("Main", 
 			   {

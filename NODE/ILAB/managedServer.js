@@ -3,12 +3,12 @@ var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
 try{
-	require(Path.resolve("./Modules/Node/Utils.js"));
-	require(Path.resolve("./Modules/Channels.js"));
-	var channelsClient = require("./Modules/Node/ChannelsClient.js");
-	require(Path.resolve("./Modules/Node/ChildProcess.js"));
-	var RouterModule = require("./Modules/Node/Router.js");
-	require(Path.resolve('./Modules/Node/Logger.js'));
+	require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
+	require(Path.resolve("./ILAB/Modules/Channels.js"));
+	var channelsClient = require(Path.resolve("./ILAB/Modules/Node/ChannelsClient.js"));
+	require(Path.resolve("./ILAB/Modules/Node/ChildProcess.js"));
+	var RouterModule = require(Path.resolve("./ILAB/Modules/Node/Router.js"));
+	require(Path.resolve('./ILAB/Modules/Node/Logger.js'));
 
 	process.on('SIGTERM', function() {
 

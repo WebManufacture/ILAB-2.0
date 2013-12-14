@@ -3,8 +3,8 @@ var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
 
-require(Path.resolve("./Modules/Node/Utils.js"));
-var Files = require(Path.resolve("./Modules/Node/Files.js"));
+require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
+var Files = require(Path.resolve("./ILAB/Modules/Node/Files.js"));
 
 KLabServer = function(config, router){
 	this.Config = config;

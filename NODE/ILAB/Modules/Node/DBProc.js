@@ -1,13 +1,13 @@
 ObjectID = require('mongodb').ObjectID;
 var Path = require('path');
-require(Path.resolve("./Modules/Node/Mongo.js"));
+require(Path.resolve("./ILAB/Modules/Node/Mongo.js"));
 
 module.exports = function(config, collection, logger){
 	if (logger){
 		var log = logger;
 	}
 	else{
-		log = require(Path.resolve("./Modules/Node/Logger.js")).primaryLogger;
+		log = require(Path.resolve("./ILAB/Modules/Node/Logger.js")).primaryLogger;
 	}
 	if (!config){
 		return null;	

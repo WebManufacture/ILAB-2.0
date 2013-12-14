@@ -2,12 +2,12 @@ var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
 try{
-	require("./Modules/Node/Utils.js");
-	require("./Modules/Channels.js");
-	require("./Modules/Node/ChildProcess.js");
-	var RouterModule = require("./Modules/Node/Router.js");
-	var Files = require("./Modules/Node/Files.js");
-	require('./Modules/Node/Logger.js');
+	require("./ILAB/Modules/Node/Utils.js");
+	require("./ILAB/Modules/Channels.js");
+	require("./ILAB/Modules/Node/ChildProcess.js");
+	var RouterModule = require("./ILAB/Modules/Node/Router.js");
+	var Files = require("./ILAB/Modules/Node/Files.js");
+	require('./ILAB/Modules/Node/Logger.js');
 
 	Server = server = {};
 	

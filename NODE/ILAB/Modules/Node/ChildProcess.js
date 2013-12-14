@@ -1,4 +1,4 @@
-require(require("path").resolve("./Modules/Node/Utils.js"));
+require(require("path").resolve("./ILAB/Modules/Node/Utils.js"));
 if (global.Channels){
 	process.on("message", function(pmessage){
 		if (typeof pmessage == "object" && pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
