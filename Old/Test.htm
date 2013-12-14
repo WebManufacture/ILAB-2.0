@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title> Router test </title>
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+		<link type='text/css' rel='stylesheet' href="http://Services.web-manufacture.net/Styles/System.default.css"/>
+		
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Utils.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/DOM.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Url.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Events.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Ajax.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Node.js"></script>
+		<style>
+			.info div{
+				display: inline-block;
+				margin-right: 10px;
+				min-width: 40px;
+			}
+			
+			.between{
+				color: gray;	
+			}
+		</style>
+		<script type='text/javascript'>
+			
+			var connections = 0;
+						
+			function Init(server){
+				for (var i = 0; i < 100; i++){
+					var xr = new XMLHttpRequest();
+					xr.open("GET","http://klab.web-manufacture.net:808/files/Config.json?rnd=" + Math.random(), true);
+					xr.onreadystatechange = Back;	
+					xr.sTime = new Date();
+					xr.send();
+					connections++;
+				}
+			};
+			
+			
+			function Back(){
+				if (this.readyState >= 4){
+					connections--;
+					//var hs = this.getAllResponseHeaders();
+					var s = this.getResponseHeader("Start");
+					var f = this.getResponseHeader("Finish");
+					var l = this.getResponseHeader("Load");
+					s = new Date(parseInt(s));
+					f = new Date(parseInt(f));
+					var time = new Date();
+					var nfo = WS.Body.div(".between", (time - this.sTime) + " ms");
+					var nfo = WS.Body.div(".info");
+					nfo.div(".Conn", connections + "");
+					nfo.div(".Start", s.formatTime(true));
+					nfo.div(".Load", " Load: " + l);
+					nfo.div(".Finish", f.formatTime(true));
+				}
+			};
+			
+			WS.DOMload(Init);
+			
+		</script>
+	</head>
+	
+	<body>
+		
+	</body>
+</html>
