@@ -1,0 +1,695 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Specs</title>
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+		<link type='text/css' rel='stylesheet' href="http://Services.web-manufacture.net/Styles/System.default.css" />
+		
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Utils.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/DOM.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Events.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Log.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Url.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Ajax.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Jasp.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/Modules.js"></script>
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/ui.js"></script>
+		<script type="text/javascript" src="http://services.web-manufacture.net/Base/v1.3/Net.js"></script>
+		<script type="text/javascript" src="http://services.web-manufacture.net/Base/v1.3/Storage.js"></script>
+		<script type="text/javascript" src="http://system.web-manufacture.net/Names.js"></script>	
+		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.3/NodeTunnel.js"></script>
+		<script type="text/javascript" src="http://web-manufacture.net:8000/SpecsCash.js"></script>
+		<script type="text/javascript" src="http://web-manufacture.net:8000/TableFiller.js"></script>
+		<style>
+			
+			.clear{
+				clear: both;	
+			}
+			
+			
+			.week-container
+			{	
+				float:right; /*нехорошо конечно, но пока не придумала, как выровнять этот сонтейнер с левым дивом. Они балуются*/
+				height: 100%;
+				width:100%;
+				
+			}
+			
+			.week-container .day-place{
+				/* Считать 20% вместе с бордюром */
+				-moz-box-sizing: border-box;
+				-webkit-box-sizing: border-box;
+				box-sizing: border-box;
+				
+				border: solid 1px #ccc;
+				/*	background: #F0FFF0;*/
+				height: 100%;
+				
+				float:left;
+			}
+			
+			
+			.week-container .day-place.specs{
+				float:left;
+				padding-left: 20px;
+			}
+			.panel{
+				position: absolute;				
+				background-color: #FFA;
+				border: solid 1px #ccc;
+			}	    
+			
+			
+			#specialists{
+				float: left;
+				background-color: #FF893B;
+				width: auto;
+				<!- min-width: 500px;-->
+				position:relative;
+				
+			}
+			
+			.visits /*.specialist.small-plate .additional-info*/{
+				display: block;	
+			}
+			
+			
+			#specialists .specialist,
+			#specialists .newSpec,
+			.day-place.visits .specialist{	
+				background-color: white;
+				border-radius: 5px 5px 5px 5px;
+				border: 1px solid black;
+				margin: 2px;
+			}
+			#specialists .specialist.spec2bkilled{
+				background-color: #FFA07A;
+			}
+			#specialists .specialist.spec2bkilled:hover{
+				background-color: Gainsboro;
+			}
+			
+			#specialists .specialist.new-sync-spec,
+			#specialists .newSpec.new-sync-spec{	
+				background-color: green;
+			}
+			
+			#specialists .specialist:hover{
+				background-color: #FFE886;
+			}			
+			
+			.addSpecBut{
+				background-image:url('http://cdn2.iconfinder.com/data/icons/onebit/PNG/onebit_31.png');
+				height:22px;
+				width:22px;
+				background-size:cover;
+				cursor: pointer;
+			}
+			
+			
+			.specialist.small-plate .additional-info{
+				display: none;
+			}
+			
+			.spec-field
+			{
+				display: inline-block;
+				margin: 2px;
+				padding: 2px;
+			}
+			
+			.spec-pattern
+			{
+				display: inline-block;
+				width: 80px;
+				margin-right: 2px;
+				margin-left: 5px;
+			}
+			
+			.spec-pattern .spec-field
+			{
+				margin: -15px 0;
+				max-width: 70px;
+				overflow: hidden;
+				position: absolute;
+				white-space: nowrap;
+				/*margin-top: 0;				
+				max-width: 70px;
+				overflow: hidden;
+				margin: 0 0 -5px 0;/*убрала нижний отступ*/
+				/*white-space: nowrap;
+				height: 15px;*/
+			}
+			
+			.org-pattern{
+				background-color:#42786B;
+				-moz-box-shadow: 1px 1px 1px #838B8B;
+				-webkit-box-shadow: 1px 1px 1px #838B8B;
+				box-shadow: 1px 1px 1px #838B8B;
+				font-weight: bold;
+				color: white;
+			}
+			
+			.specialist .org-name{
+				color: #6B121A;
+				font-weight: bold;
+				
+			}
+			
+			
+			.specialist .speciality{
+				background-color: #FF653E;
+				-moz-box-shadow: 1px 1px 1px #838B8B;
+				-webkit-box-shadow: 1px 1px 1px #838B8B;
+				box-shadow: 1px 1px 1px #838B8B;
+				color: white;
+				
+			}
+			.specialist .spec-pattern .speciality:hover{
+				overflow: visible;
+				max-width: 500px;
+				position: absolute;
+			}
+			
+			.specialist .index{
+				background-color:#71CCB6;
+				-moz-box-shadow: 1px 1px 1px #838B8B;
+				-webkit-box-shadow: 1px 1px 1px #838B8B;
+				box-shadow: 1px 1px 1px #838B8B;
+				font-weight: bold;
+				color: white;
+			}
+			
+			.specialist .full-name{
+				font-size: 20px;
+				font-weight: bold;
+			}
+			
+			.specialist .org-town,
+			.specialist .org-address{	
+				color:white;
+				background-color: #71CCB6;
+			}
+			
+			.specialist .telephone,
+			.specialist .e-mail{
+				color: #70A188;					
+			}
+			
+			.specialist .telephone .field,
+			.specialist .e-mail .field{
+				display: inline-block;	
+			}
+			
+			.specialist .field-pic{
+				height:20px;
+				width:20px;
+				background-size:cover; 
+				margin: 0 0 -5px 0;/*убрала нижний отступ*/
+				display: inline-block;
+			}
+			
+			
+			
+			.specialist .deleteSpec{
+				float: right;
+				margin: 3px 3px 0 0;
+				background-image:url('http://cdn3.iconfinder.com/data/icons/softwaredemo/PNG/128x128/DeleteRed.png');
+			}
+			.specialist .editSpecsBut{
+				display: none;
+				float: right;
+				margin: 3px 3px 0 0;
+				background-image:url('http://cdn3.iconfinder.com/data/icons/prettyoffice/128/edit.png');
+			}
+			
+			.specialist:hover .editSpecsBut{
+				display: inline-block;
+			}
+			
+			.specialist .telPic{
+				background-image:url('http://cdn3.iconfinder.com/data/icons/token/Token,%20128x128,%20PNG/Telephone.png');
+				
+			}
+			
+			.specialist .mailPic{
+				background-image:url('http://cdn3.iconfinder.com/data/icons/token/Token,%20128x128,%20PNG/Envelope.png');
+			}
+			
+			.newSpec.hideDiv,
+			.specialist.hideDiv{
+				display:none;
+			}
+			
+			#specialists .newSpec{
+				background-color: #FFE886;
+				
+				width: auto;
+				height: 200px;
+			}
+			/*#ActionsPanel{ display: none;}*/
+			
+		
+
+			.search-item{
+				font-family:arial, sans-serif;
+				display: inline-block;
+				font-size:11px;
+				z-index:100;
+				border-radius: 4px;
+				background:#710069;
+				text-decoration: none;
+				color: white;
+				text-align: center;
+				padding: 3px 5px;
+			}
+			
+			.newSpec.hideDiv,
+			.specialist.hideDiv{
+				display:none;
+			}
+			
+			#specialists .newSpec{
+				background-color: #FFE886;
+				
+				width: auto;
+				height: 200px;
+			}
+			
+			
+			.newSpec .addInfo{
+				display: inline-block;
+				vertical-align: top;
+				/*margin-left: 5px;
+				margin-right: 2px;*/
+				margin: 5px;
+				
+				
+			}
+			
+			.newSpec .buttons{
+				text-align:center;
+			}
+			
+			.newSpec .input{
+				text-align:center;
+				height:20px;
+				margin: 5px 5px 5px 0;
+			}
+			.newSpec .input.full-name{
+				background-color:#D0F18F;
+				width: 95%;
+			}
+			.newSpec .input.telephone,
+			.newSpec .input.e-mail,
+			.newSpec .org-info{
+				width: 95%;
+			}
+			/*http://kuler.adobe.com/#themeID/2046286*/
+			
+			
+			.newSpec .input.empty{
+				color: #8B8989;	
+			}
+			
+			.newSpec .selectOffice{
+				display: inline-block;
+			}
+			.newSpec .scroll_child{
+				width:200px;
+				height:70%;
+				overflow-x:hidden;
+				overflow-y:scroll;
+				background-color: white;
+				cursor: pointer;
+				font-size: 12px;
+				white-space: nowrap;
+				
+			}
+			
+			
+			.newSpec .speciality{
+				background-color: white;
+				
+			}
+			
+			.newSpec .speciality-item{
+				border-bottom: 1px solid lime;
+				border-left: 1px solid lime;
+				font-family: verdana;
+				font-size: 10px;
+				padding-top: 3px;
+				white-space: normal;
+				text-shadow: 1px 1px 1px lightgray;
+				padding-left: 2px;
+			}
+			
+			.newSpec .speciality-item:hover{
+				background-color: #D0F18F;
+				text-shadow: none;
+				font-weight: bold;
+				padding-left: 4px;
+			}
+			
+			
+			.checkits{
+				float:right;
+				display:inline-block;
+				margin-top:3px;
+			}
+			
+			.ssort{
+				display:block;
+			}
+			.ssort,.ca,.cb{
+				
+				text-decoration:none;
+				color:#fff;
+				width:104px;
+				height:20px;
+				text-align:center;
+				border:1px solid #fff;
+				cursor:pointer;
+				line-height:20px;
+				font-size:11px;
+				overflow:hidden;
+				padding:1px;
+				margin:0;
+				
+			}
+			
+			.checkits:hover .ssort{
+				color:#fff;
+				background:#36f;
+			}
+			
+			.ca:hover,
+			.cb:hover{
+				background-color: #6fc;;
+			
+			}
+			.ca, .cb{
+				background:#ddd;
+				color:#000;
+					
+			}
+			.cab{
+				display:none;
+			}
+			
+			.checkits:hover .cab{
+				display:block;
+				list-style:none;
+				width:104px;
+				height:20px;
+				position:absolute;
+			}
+			
+			
+			.office{
+				display:none;
+				border-radius: 10px 10px 10px 10px;
+				
+				background-color:#42786B;
+				box-shadow: 1px 1px 1px #838B8B;
+				font-weight: bold;
+				color: white;
+				text-align: center;
+				cursor:pointer;
+				height:20px;
+				margin-bottom: 20px;
+				background-size:cover;
+				
+			}
+			
+			.checkSpec{
+				background-size:cover;
+				background-image:url('http://cdn4.iconfinder.com/data/icons/cc_mono_icon_set/blacks/48x48/checkbox_unchecked.png');
+				float: right;
+				height: 17px;
+				width: 17px;
+				margin: 3px 3px 0 0;
+			}
+			.checkSpec.checked{
+				background-image:url('http://cdn4.iconfinder.com/data/icons/cc_mono_icon_set/blacks/48x48/checkbox_checked.png');
+			}
+			
+			.day-place .visitsInfo{
+				background-size:cover;
+				height: 10%;
+				width:80%;
+				background-image:url('http://cs421119.userapi.com/v421119562/2e0/wGm3MlIXndM.jpg');
+				margin: 2px;
+				padding: 2px;
+			}
+			.day-place.visits .specialist{
+				background-color:#FFE886;
+			}
+			.specialist.hidden,
+			.fac.hidden{
+				display:none;
+			}
+			
+			
+		</style>		
+	</head>
+	<body>
+		
+		<div id='search'>
+			<input id='searchIn'/>
+			<div id='searchList'></div>
+		</div>
+		
+		<script type="text/javascript">
+			ss = DOM.div();
+			sk = "";
+			
+			DOM("#searchIn").onkeypress = function(event){
+				sk = event.keyChar;
+				DOM("#searchList").set(null, sk);
+			};
+			
+			DOM("#searchIn").onchange = function(){
+				ss.div(".line", this.value);
+			};
+			
+			Spesialists = {};
+			
+			Spesialists.Init = function(){
+				var specsObj = DOM.get('#specs-table');
+				TableFiller.Init(specsObj);
+				var specsTable = specsObj.get('#specialists');
+				specsTable.oncheck.subscribe(Spesialists.AddSelectedSpec);
+				specsTable.onuncheck.subscribe(Spesialists.DelSelectedSpec);
+			};
+			
+			Spesialists.AddSelectedSpec = function(obj){
+				obj.hide();
+				alert('AAA');	
+			};
+			
+			Spesialists.DelSelectedSpec = function(obj){
+				obj.hide();
+				alert('BBB');
+			};
+			
+			function Delete(deleteButton){
+				TableFiller.DeleteObject(deleteButton);
+			};
+			
+			function Edit(editButton){
+				DOM.all('.newSpec').del();
+				TableFiller.ShowEditObjectForm(editButton);
+			};
+			
+			function New(){
+				DOM.all('.newSpec').del();
+				TableFiller.ShowEditObjectForm();
+			};
+			
+			function Save(saveButton){
+				TableFiller.SaveObject(saveButton);
+			};
+			
+			function ShowInfo(sh){
+				if (sh.get('^.specialist').is('.checked')){
+					TableFiller.ObjectConteiner.oncheck.fire(sh.get('^.specialist').del('.checked'), 'del');
+				}else{
+					TableFiller.ObjectConteiner.oncheck.fire(sh.get('^.specialist').add('.checked').clone().del('.small-plate').del('.hide'), 'add');
+				};
+				
+				
+				
+				//var spcDiv = sh.get("^.specialist");
+				//if (spcDiv.is('.small-plate')){
+				//	sh.del('.hide');
+				//	spcDiv.del('.small-plate');
+					
+				//} else {
+				//	sh.add('.hide');
+				//	spcDiv.add('.small-plate');
+					
+				//}
+			};
+			
+			function fix(){
+				var lPan = DOM.get("#specialists");
+				var pin = DOM.get("#pinButton");
+				if (lPan.is('.panel-pin')){
+					pin.del('.pined');
+					lPan.del('.panel-pin'); 
+				} else {
+					pin.add('.pined');
+					lPan.add('.panel-pin');
+				};
+			};
+			
+			
+			WS.DOMload(Spesialists.Init);
+		</script>
+		<script type="text/javascript" src="http://system.web-manufacture.net/Names.js"></script>		
+		<script type="text/javascript" src="http://system.web-manufacture.net/recursionNames.js"></script>
+		<script type="text/javascript" src="http://system.web-manufacture.net/Specialities.js"></script>
+		<include url='http://services.web-manufacture.net/UI/Dragging.htm'></include>
+		<include url='http://services.web-manufacture.net/UI/HtmlElements.htm'></include>
+		<include url='http://system.web-manufacture.net/SpecialistsDB.htm'></include>
+		<!--include url='http://services.web-manufacture.net/Authentication/Authentication.htm'></include-->
+		
+		<div class='week-container'>
+				
+				<div class="day-place specs drop-receiver" >
+					<div id="specialists" class='object-container'>
+						<div class='search spec-field' >
+							<input style='width:400px;align:center;' placeholder="search"
+							onfocus='Plan.SearchBegining()' onblur='Plan.SearchEnding(this)' spellcheck = 'true' onkeyup='Plan.SearchSpecRes(this)'>
+							<div class='fac container' style='position: absolute; z-index:100;'>
+								<div class='fac prototype' style='opacity: 0.9; cursor: pointer; position: relative; width:407px; background-color:white;' onclick='Plan.SetSearchValue(this)'> шо-то там</div>
+							</div>
+							<div id='searchBox' class='invisible'>
+								
+								<a class="search-item find" href="#">Искать все что содержит</a>
+								
+								<a class="search-item find" href="#">Искать в поле</a>
+								
+								
+								<a class="search-item find" href="#">Искать </a>
+								
+							</div><br>
+							<div class='checkits' >
+								
+								<div class="ssort spec-field" onclick='Plan.allChecked()' style='z-index:100;'> Выбрать всех</div>
+								<div class='cab invisible'>
+									<div onclick='Plan.allChecked()' class='ca'>Выбрать всех</div>
+									<!--<li><a href="#" onclick='Plan.pickCheckboxes()'>Выборка по одному</a></li>-->
+									<div onclick='Plan.allUnChecked()' class='cb'>Снять выделение</div>
+								</div>		
+								
+							</div>
+							
+						</div>
+		<div id='specs-table'>
+			
+
+			<div class='addSpecBut' title="Add new specialist" id='addSpecBut' onclick="New()">	</div>
+			
+			
+			<div id="tabs-panel">
+				<div class='tab-container prototype' onclick= 'TableFiller.ContentDisplay(this)' display='block'>	
+					<div class='name-tab'>
+						Таб
+					</div>
+				</div>	
+			</div>
+			
+			
+			<div id="specialists" class='object-container'>
+				<div class='lightbox'></div>
+			</div>
+			
+			
+			<div id='EditSpecForm' class='newSpec prototype edit-object-proto' id='newSpec'>
+				<!--<input type="submit" value="Submit" />-->
+				<div class="speciality addInfo scroll_child" size="1">
+					<div class='speciality-item prototype'> Выбрать профессию </div>
+				</div>
+				<div class='addInfo'>
+					<select class="org-info " size="1" >
+						<option class='selectOffice '> Выбрать контору и тип конторы </option>
+					</select>
+					<br/>
+					<input class="input full-name" field='name' default-text="ФИО">
+					<br/>
+					<input class="input telephone" default-text="telephone">
+					<br/>
+					<input class="input e-mail" default-text="e-mail">
+				</div>
+				<div class='buttons'>
+					<div class='btn-ira ok ' title='OK' onclick = 'Save(this)'> OK </div>
+					<div class='btn-ira clear ' title='Clear'> Clear </div>
+					<div class='btn-ira cancel ' title='Cancel' onclick ='TableFiller.CancelChanges(this)' > Cancel </div>
+				</div>
+			</div>	
+			
+			
+			
+						
+						<div id='SpecProto' class="specialist prototype small-plate object-prototype" >
+							<div class='spec-field spec-pattern'>
+								<div class='org-pattern spec-field field' field='org-pattern'>
+									ОП 
+								</div>
+							</div>
+							<div class='org-name spec-field field' field='org-name'>
+								"Засада", особое отделение №666
+							</div>
+							<div class='org-address spec-field field additional-info' field='org-address'>
+								ул.Светлая, 27
+							</div>
+							<div class='org-town spec-field field additional-info' field='org-town'>
+								пгт Бобруйск
+							</div>
+							
+							<div class='deleteSpec hide field-pic field delete-button' title='Delete' onclick = ''></div>
+							<br/>
+							<div class='spec-pattern  spec-field'>
+								<div class='speciality spec-field field' field='speciality'>
+									Техник по племенному делу
+								</div>
+							</div>
+							<div class='index field spec-field additional-info' field='index'>
+								A95
+							</div>
+							<div class='full-name spec-field field' field='name'></div>
+							<div class="checkSpec check-button" onclick='' style="float:right;"></div>
+							<div class='editSpecsBut field-pic field edit-button' title='Edit Specialist&aposs info' onclick = ''></div>
+							<div class='additional-info'>
+								<div class='telephone spec-field'>
+									<div class='telPic field-pic'></div>
+									<div class='telephone field'  field='telephone'></div>
+								</div>
+								<div class='e-mail spec-field'>
+									<div class='mailPic field-pic'></div>
+									<div class='e-mail field' field='e-mail'></div>
+								</div>
+								<br/>
+								<div class='diagram  spec-field field' field='diagram'>
+									bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla-bla
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			
+			
+			<div class="day-place off drop-receiver" style='width:45%;'> <!-- invisible -->
+				<div class='office prototype'> ООО"Рога и Копыта"</div>
+			</div>	
+			<div class='selected-spescs'>
+			</div>
+		</div>
+	</body>
+	
+</html>	

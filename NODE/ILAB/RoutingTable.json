@@ -1,0 +1,13 @@
+[
+ {"id":"Admin","Process":"internal","Type":"managed", "Path" : "/Config/>","basepath":"./Admin", "Frame":"ManagedServer","File":"./Admin/AdminServer.js","State":"working"},
+ {"id":"KLAB","Host":"klab.web-manufacture.net","Process":"isolated","Frame":"ManagedServer", "File":"KLabServer.js","Type":"proxied","State":"working"},
+ {"id":"Services","Host":"services.web-manufacture.net","Process":"internal","File":"StaticServer.js","Type":"proxied","basepath":"./services","State":"working"},
+ {"id":"System","Host":"system.web-manufacture.net","Process":"internal","File":"StaticServer.js","Type":"proxied","basepath":"./system","State":"working"},
+ {"id":"ServicesLocal","Port":6200,"Path":"/services/>", "Process":"internal","File":"StaticServer.js","Type":"managed","basepath":"./services","State":"working"},
+ {"id":"SystemLocal","Port":6200,"Path":"/system/>", "Process":"internal","File":"StaticServer.js","Type":"managed","basepath":"./system","State":"working"},
+ {"id":"ModulesLocal","Port":6200,"Path":"/modules/>", "Process":"internal","File":"StaticServer.js","Type":"managed","basepath":"./modules","State":"working"},
+ {"id":"eBox","Port":6200,"Path":"/robomind/>","Process":"internal","File":"StaticServer.js", "Type":"managed","basepath":"./ebox","State":"working"},
+ {"id":"Identification", "Frame":"ManagedServer", "Path":"/identification/>","Process":"isolated", "Type":"managed", "File":"identification/ServerIPC.js","State":"idle"},
+ {"id":"CncController", "Path":"/CncController/>", "Type":"managed", "Frame":"ManagedServer", "Process":"isolated","File":"cnccontroller/CncController.js","State":"idle"},
+ {"id":"Uart", "Frame":"ProxiedServer", "Port":5898, "Path":"/uart/>","Process":"isolated", "Type":"proxied", "File":"Uart/UartServer.js","State":"exited"}
+]
