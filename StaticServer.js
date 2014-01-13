@@ -119,7 +119,7 @@ try{
 	global.StaticServer.FormatPath = function(fpath){
 		fpath = fpath.replace(/\//g, "\\");
 		if (!fpath.start("\\")) fpath = "\\" + fpath;
-		fpath = this.config.basepath + fpath;
+		fpath = this.Config.basepath + fpath;
 		fpath = fpath.replace(/\//g, "\\");
 		if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
 		return fpath.toLowerCase();
