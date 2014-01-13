@@ -27,7 +27,18 @@ try{
 			if (serv.HTTPServer){
 				serv.HTTPServer.close();
 			}
-		});			
+		});		
+
+		this.FormatPath = function(fpath){
+			fpath = fpath.replace(/\//g, "\\");
+			if (!fpath.start("\\")) fpath = "\\" + fpath;
+			fpath = this.Config.basepath + fpath;
+			fpath = fpath.replace(/\//g, "\\");
+			if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
+			return fpath.toLowerCase();
+		}
+		
+		
 		this.ProcessRequest = function(req, res){
 			res.setHeader("Access-Control-Allow-Origin", "*");
 			res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
@@ -44,7 +55,7 @@ try{
 					if (serv.Config.DefaultFile && (url.pathname == "" || url.pathname == "/")){
 						url.pathname += serv.Config.DefaultFile;
 					}
-					var fpath = Path.resolve(StaticServer.FormatPath(url.pathname));
+					var fpath = Path.resolve(serv.FormatPath(url.pathname));
 					if (req.method == "GET"){						
 						var inm = req.headers["if-none-match"];
 						if (inm && serv.LastFiles[fpath] == inm){
@@ -86,7 +97,7 @@ try{
 					if (serv.Config.DefaultFile && (context.pathTail == "" || context.pathTail == "/")){
 						context.pathTail += serv.Config.DefaultFile;
 					}
-					var fpath = Path.resolve(StaticServer.FormatPath(context.pathTail));
+					var fpath = Path.resolve(serv.FormatPath(context.pathTail));
 					if (context.req.method == "GET"){						
 						var inm = context.req.headers["if-none-match"];
 						if (inm && serv.LastFiles[fpath] == inm){
@@ -114,16 +125,6 @@ try{
 			return true;
 		};
 	};
-	
-	
-	global.StaticServer.FormatPath = function(fpath){
-		fpath = fpath.replace(/\//g, "\\");
-		if (!fpath.start("\\")) fpath = "\\" + fpath;
-		fpath = this.Config.basepath + fpath;
-		fpath = fpath.replace(/\//g, "\\");
-		if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
-		return fpath.toLowerCase();
-	}
 	
 	
 	global.StaticServer.prototype.Init = function(config, globalConfig, logger){
