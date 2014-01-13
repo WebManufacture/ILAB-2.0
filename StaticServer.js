@@ -9,18 +9,16 @@ try{
 	var Files = require(Path.resolve("./ILAB/Modules/Node/Files.js"));
 	require(Path.resolve('./ILAB/Modules/Node/Logger.js'));
 
-	process.on('SIGTERM', function() {
-
-	});
-	
 	global.StaticServer = function(){
 		var args = {
 			Port: 80
 		};
+		
 		if (process.argv[2]){
 			args = process.argv[2];
 			args = JSON.parse(args);
 		}
+		
 		this.Config = args;
 		var serv = this;
 		process.on('exit',function(){	
@@ -28,16 +26,6 @@ try{
 				serv.HTTPServer.close();
 			}
 		});		
-
-		this.FormatPath = function(fpath){
-			fpath = fpath.replace(/\//g, "\\");
-			if (!fpath.start("\\")) fpath = "\\" + fpath;
-			fpath = this.Config.basepath + fpath;
-			fpath = fpath.replace(/\//g, "\\");
-			if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
-			return fpath.toLowerCase();
-		}
-		
 		
 		this.ProcessRequest = function(req, res){
 			res.setHeader("Access-Control-Allow-Origin", "*");
@@ -69,6 +57,11 @@ try{
 						}
 					}
 					if (req.method == "DELETE" || req.method == "POST" || req.method == "PUT" ){
+						if (serv.Config.Mode && serv.Config.Mode == "ReadOnly"){
+							res.statusCode = 403;
+							res.end();	
+							return;
+						}
 						delete serv.LastFiles[fpath];
 					}
 					serv.FilesRouter.ProcessRequest(req, res, url);	
@@ -110,6 +103,10 @@ try{
 						}
 					}
 					if (context.req.method == "DELETE" || context.req.method == "POST" || context.req.method == "PUT" ){
+						if (serv.Config.Mode && serv.Config.Mode == "ReadOnly"){
+							context.finish(403);
+							return true;
+						}
 						delete serv.LastFiles[fpath];
 					}
 					return serv.FilesRouter[context.req.method](context);
@@ -125,6 +122,15 @@ try{
 		};
 	};
 	
+	
+	global.StaticServer.prototype.FormatPath = function(fpath){
+		fpath = fpath.replace(/\//g, "\\");
+		if (!fpath.start("\\")) fpath = "\\" + fpath;
+		fpath = this.Config.basepath + fpath;
+		fpath = fpath.replace(/\//g, "\\");
+		if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
+		return fpath.toLowerCase();
+	};		
 	
 	global.StaticServer.prototype.Init = function(config, globalConfig, logger){
 		if (config){
