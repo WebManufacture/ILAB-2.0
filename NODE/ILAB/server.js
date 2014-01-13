@@ -306,8 +306,7 @@ ILab.Init = function(){
 			if (!item.Path) item.Path = "/>";
 			node.Init(item, cfg);			
 			var port = item.Port;
-			if (node.ProxyPort) port = node.ProxyPort;
-			var itemPath = ((item.Host ? item.Host : "default") + ":" + (port ? port : cfg.Port));
+			var itemPath = ((item.Host ? item.Host : "default") + ":" + (port ? port : cfg.Port) + (node.ProxyPort ? "(" + node.ProxyPort + ")" : ""));
 			if (node.path){
 				itemPath += node.path;
 			}
