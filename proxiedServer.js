@@ -5,9 +5,9 @@ var Path = require('path');
 try{
 	require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
 	require(Path.resolve("./ILAB/Modules/Channels.js"));
-	var channelsClient = require("./ILAB/Modules/Node/ChannelsClient.js");
+	var channelsClient = require(Path.resolve("./ILAB/Modules/Node/ChannelsClient.js"));
 	require(Path.resolve("./ILAB/Modules/Node/ChildProcess.js"));
-	var RouterModule = require("./ILAB/Modules/Node/Router.js");
+	var RouterModule = require(Path.resolve("./ILAB/Modules/Node/Router.js"));
 	require(Path.resolve('./ILAB/Modules/Node/Logger.js'));
 		
 	ProxiedServer = function(){;
@@ -104,7 +104,7 @@ try{
 			res.end("OK");	
 			return;
 		}
-		var url = Url.parse(req.url);
+		var url = Url.parse(req.url, true);
 		try{
 			if (this.Enabled){
 				var serv = this.module;

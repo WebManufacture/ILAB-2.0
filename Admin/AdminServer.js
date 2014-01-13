@@ -13,7 +13,7 @@ AdminServer = {
 	Init : function(config, localRouter, router, logger){
 		localRouter.for("Main", "/", function(context){
 			context.res.setHeader("Content-Type", "text/html; charset=utf-8");
-		   fs.readFile("./Admin/Config.htm", "utf8", function(err, result){   
+		   fs.readFile(config.basepath + "/Config.htm", "utf8", function(err, result){   
 			   if (err){
 				   context.finish(500, "Not found files view page " + err);
 				   return;

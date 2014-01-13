@@ -13,7 +13,7 @@ KLabServer = function(config, router){
 		   GET : function(context){
 				if (context.query["action"] == "edit" || context.query["action"] == "create"){
 				   context.res.setHeader("Content-Type", "text/html; charset=utf-8");
-				   fs.readFile("./Klab/TextEditor.htm", "utf8", function(err, result){   
+				   fs.readFile(Path.resolve("./ILAB/Klab/TextEditor.htm"), "utf8", function(err, result){   
 					   if (err){
 						   context.finish(500, "Not found files view page " + err);
 						   return;
@@ -37,7 +37,7 @@ KLabServer = function(config, router){
 				   }
 				   if (stat.isDirectory()){
 					   context.res.setHeader("Content-Type", "text/html; charset=utf-8");
-					   fs.readFile("./Klab/files.htm", "utf8", function(err, result){   
+					   fs.readFile(Path.resolve("./ILAB/Klab/files.htm"), "utf8", function(err, result){   
 						   if (err){
 							   context.finish(500, "Not found files view page " + err);
 							   return;

@@ -253,6 +253,7 @@ for (var item in NodeProto){
 ILab = {};
 
 ILab.Init = function(){
+	process.setMaxListeners(100);
 	console.log(process.cwd().prompt);
 	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, cfgFile : "Config.json", routingFile: "RoutingTable.json" };
 	
