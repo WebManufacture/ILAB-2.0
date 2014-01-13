@@ -101,8 +101,8 @@ try{
 					if (context.req.method == "GET"){						
 						var inm = context.req.headers["if-none-match"];
 						if (inm && serv.LastFiles[fpath] == inm){
-							res.statusCode = 304;
-							res.end();	
+							context.res.statusCode = 304;
+							context.res.end();	
 							return;
 						}
 						else{
