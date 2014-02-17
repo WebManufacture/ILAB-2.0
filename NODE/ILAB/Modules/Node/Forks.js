@@ -147,8 +147,7 @@ Fork.prototype = {
 				callback.call(fork, Fork.Statuses[fork.code]);	
 			});
 		}
-		this.process.kill();
-		this.logger.debug("fork stopped " + this.path);
+		this.close();
 		return this.process;
 	},
 	
@@ -227,8 +226,12 @@ Fork.prototype = {
 		
 	close : function(){
 		if (this.process){
+			var proc = this.process;
 			this.logger.debug("fork close - " + this.path);
-			this.process.kill();
+			this.process.send("EXITING");
+			setTimeout(function(){
+				proc.kill('SIGINT');	
+			}, 400);
 		}
 	},
 };

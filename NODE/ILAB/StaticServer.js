@@ -153,7 +153,7 @@ try{
 			this.Config.basepath = this.Config.basepath.substr(0, this.Config.basepath.length - 1);
 		}
 		this.Config.basepath = this.Config.basepath.replace(/\//g, "\\");
-		console.log(this.Config.basepath);
+		//console.log(this.Config.basepath);
 		this.watcher = fs.watch(Path.resolve(this.Config.basepath), {}, function(event, fname){
 			delete serv.LastFiles[Path.resolve(fname)];		
 		});

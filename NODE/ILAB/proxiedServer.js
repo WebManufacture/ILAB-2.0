@@ -1,7 +1,10 @@
-﻿var http = require('http');
+var http = require('http');
 var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
+
+var sio = require('socket.io');
+
 try{
 	require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
 	require(Path.resolve("./ILAB/Modules/Channels.js"));

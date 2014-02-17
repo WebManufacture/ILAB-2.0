@@ -1,30 +1,35 @@
 require(require("path").resolve("./ILAB/Modules/Node/Utils.js"));
 if (global.Channels){
 	process.on("message", function(pmessage){
-		if (typeof pmessage == "object" && pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
-			if (pmessage.clientId){
-				var client = Channels.followed[pmessage.clientId];
-				if (client){
-					if (client[pmessage.pattern]){
-						console.log("REFOLLOWING PATTERN DETECTED: " + pmessage.pattern);
-						return;
+		if (pmessage == 'EXITING'){
+			process.exit();	
+		}
+		if (typeof pmessage == "object"){
+			if (pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
+				if (pmessage.clientId){
+					var client = Channels.followed[pmessage.clientId];
+					if (client){
+						if (client[pmessage.pattern]){
+							console.log("REFOLLOWING PATTERN DETECTED: " + pmessage.pattern);
+							return;
+						}
 					}
+					else{
+						client = Channels.followed[pmessage.clientId] = {};
+					}
+					client[pmessage.pattern] = 1;
 				}
 				else{
-					client = Channels.followed[pmessage.clientId] = {};
+					console.log("Anonymous client DETECTED");				
 				}
-				client[pmessage.pattern] = 1;
+				Channels.followToGlobal(pmessage.pattern);
 			}
-			else{
-				console.log("Anonymous client DETECTED");				
+			if (pmessage.type && pmessage.type == "channelMessage"){
+				var dateEnd = new Date();
+				var dateStart = new Date(pmessage.date);
+				console.log("-> " + pmessage.args[0]);
+				Channels.emit.apply(Channels, pmessage.args);
 			}
-			Channels.followToGlobal(pmessage.pattern);
-		}
-		if (typeof pmessage == "object" && pmessage.type && pmessage.type == "channelMessage"){
-			var dateEnd = new Date();
-			var dateStart = new Date(pmessage.date);
-			console.log("-> " + pmessage.args[0]);
-			Channels.emit.apply(Channels, pmessage.args);
 		}
 	});
 	

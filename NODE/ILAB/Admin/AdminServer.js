@@ -12,7 +12,7 @@ var Files = require(path.resolve("./ILAB/Modules/Node/Files.js"));
 AdminServer = {
 	Init : function(config, localRouter, router, logger){
 		localRouter.for("Main", "/", function(context){
-			context.res.setHeader("Content-Type", "text/html; charset=utf-8");
+		context.res.setHeader("Content-Type", "text/html; charset=utf-8");
 		   fs.readFile(config.basepath + "/Config.htm", "utf8", function(err, result){   
 			   if (err){
 				   context.finish(500, "Not found files view page " + err);
