@@ -1,6 +1,7 @@
 var http = require('http');
 var Url = require('url');
 var Path = require('path');
+var debug = require('debug');
 require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
 var logger = require(Path.resolve("./ILAB/Modules/Node/Logger.js"));
 var Forks = require(Path.resolve("./ILAB/Modules/Node/Forks.js"));
@@ -10,9 +11,8 @@ var channelsClient = require(Path.resolve("./ILAB/Modules/Node/ChannelsClient.js
 var DBProc = require(Path.resolve("./ILAB/Modules/Node/DBProc.js"));
 var fs = require('fs');
 var httpProxy = require('http-proxy');
+var proxy = new httpProxy.createProxyServer({});
 var colors = require('colors');
-
-var proxy = new httpProxy.RoutingProxy();
 
 colors.setTheme({
 	silly: 'rainbow',
@@ -42,7 +42,8 @@ NodeProto = {
 			nodeType : this.type,
 			processType : this.process,
 			name : this.config.id,
-			url: this.url
+			url: this.url, 
+			conf: this.config
 		}
 	},	
 	
@@ -186,7 +187,7 @@ IsolatedNode.prototype = {
 		if (this.type == "managed"){
 			var serv = ILabRouter.AddNode(this, function(context){
 				context.res.setHeader("Node", node.type + ":" + node.process + ":" + node.id);
-				proxy.proxyRequest(context.req, context.res, { host: "localhost", port: pp });
+				proxy.web(context.req, context.res, { target: "http://127.0.0.1:" + pp });
 				context.abort();
 				return true;
 			});
@@ -194,7 +195,7 @@ IsolatedNode.prototype = {
 		if (this.type == "proxied"){
 			var serv = ILabRouter.AddNode(this, function(req, res){
 				res.setHeader("Node", node.type + ":" + node.process + ":" + node.id);
-				proxy.proxyRequest(req, res, { host: "localhost", port: pp });
+				proxy.web(req, res, { target: "http://127.0.0.1:" + pp });
 				return false;
 			});
 		}
@@ -455,6 +456,28 @@ ILabRouter.ManagedProcess = function(req, res, url){
 	return true;
 };
 
+ILabRouter.AttachSocketListener = function(server){
+	//sio.serveClient(false);
+	server = require('socket.io').listen(server);
+	server.on('connection', function (socket) {
+		//console.log(socket);
+		var path = '/' + socket.namespace.name;
+		console.log("S>>> Channel subscribe: " + path);
+		socket.on("message", function(message, data){
+			message = JSON.parse(message);
+			Channels.emit(path + message.path, message.data);
+		});
+		var handler = function(data, arg){
+			socket.emit('message', arguments);
+		}
+		Channels.on(path, handler);			
+		socket.on('disconnect', function (socket) {
+			Channels.clear(path, handler);
+			console.log("S<<< Channel unsubscribe: " + path);
+		});	
+	});
+};
+
 ILabRouter.CreateServer = function (Port){
 	console.log("ILAB server v "  + ILab.Config.ver + " Listening " + Port + "");
 	var httpServer = http.createServer(function(req, res){
@@ -486,6 +509,7 @@ ILabRouter.CreateServer = function (Port){
 			return false;
 		}
 	}).listen(Port);
+	ILabRouter.AttachSocketListener(httpServer);
 	return {
 		_httpServer : httpServer
 	};

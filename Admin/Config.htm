@@ -92,6 +92,10 @@
 				width: 250px;
 			}
 			
+			#NodesBlock .object-item:active{
+				background-color: rgba(255,255,0,0.5);
+			}
+			
 			#NodesBlock .object-item[data-state='exited'],
 			#NodesBlock .object-item[data-state='stopped']{
 				background-color: rgba(62, 112, 203, 0.5);
@@ -202,6 +206,7 @@
 		<include url='http://services.web-manufacture.net/UI/UiUtils.htm'></include>
 		<include url='http://services.web-manufacture.net/UI/HtmlElements.htm'></include>
 		<include url="http://services.web-manufacture.net/ui/Toolbars.htm"></include>
+		<include url='http://services.web-manufacture.net/UI/JsonEditor.htm'></include>
 		<div id='serverVer'></div>
 		<div class="simple-grid block" url='nodes/' id="NodesBlock" oninit="ConfManager.InitTable();">
 			<div class='object-template prototype'>
@@ -213,10 +218,10 @@
 				<div class='node-file' field='file'>
 				</div>
 				<div class='node-controls'>
-					<div class='mini-btn start' onclick='Server.Start(this.get("^.object-item"))'></div>
-					<div class='mini-btn stop' onclick='Server.Stop(this.get("^.object-item"))'></div>
-					<div class='mini-btn remove' onclick='Server.Del(this.get("^.object-item"))'></div>
-					<div class='mini-btn log'  onclick='ConfManager.ShowLogs(this.get("^.object-item"))'></div>
+					<div class='mini-btn start' onclick='Server.Start(this.get("^.object-item")); event.stopPropagation();'></div>
+					<div class='mini-btn stop' onclick='Server.Stop(this.get("^.object-item")); event.stopPropagation();'></div>
+					<div class='mini-btn remove' onclick='Server.Del(this.get("^.object-item")); event.stopPropagation();'></div>
+					<div class='mini-btn log'  onclick='ConfManager.ShowLogs(this.get("^.object-item")); event.stopPropagation();'></div>
 				</div>
 			</div>
 		</div>
@@ -340,6 +345,8 @@
 				item.processType = item.get("@data-processType").toLowerCase(); 
 				item.add("." + item.processType);
 				item.key = item.get("@key");
+				item.config = item.conf;
+				item.onclick = NodeItem.NodeClick;
 				item.readChannel = new HttpChannel("/channels/" + item.key + "/state", true);
 				item.writeChannel = new HttpChannel("/channels/" + item.key + "/control", false);
 				Server.Nodes[item.key] = item.channel;
@@ -409,6 +416,12 @@
 			
 			ConfManager.SortByPath = function(a, b){
 				return a.path > b.path ? 1 : -1;
+			};
+			
+			NodeItem = {};
+			
+			NodeItem.NodeClick = function(){
+				JsonEditor.EditObject(this.config, this.key);
 			};
 			
 			WS.DOMload(ConfManager.Init);

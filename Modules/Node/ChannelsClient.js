@@ -5,6 +5,30 @@ error = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).error;
 info = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).info;
 debug = require(paths.resolve('./ILAB/Modules/Node/Logger.js')).debug;
 
+var sio = require('socket.io');
+
+global.SocketChannels = {
+	Attach : function(server, path){
+		if (!path) path = '/';
+		sio.serveClient(false);
+		var server = sio.attach(server);
+		sio.of(path).on('connection', function (socket) {
+			console.log("S>>> Channel subscribe: " + path);
+			socket.on("message", function(message){
+				Channels.emit(path, message);
+			});
+		    var handler = function(data){
+				socket.emit('message', data);
+			}
+			Channels.on(path, handler);			
+			socket.on('disconnect', function (socket) {
+				Channels.clear(path, handler);
+				console.log("S<<< Channel unsubscribe: " + path);
+			});	
+		});
+	}
+}
+
 HttpChannelsClient = {	
 	GET :  function(context){
 		if (context.completed){
