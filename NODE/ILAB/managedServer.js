@@ -1,4 +1,4 @@
-﻿var http = require('http');
+var http = require('http');
 var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
@@ -28,8 +28,8 @@ try{
 		this.Config = args;
 		var serv = this;
 		process.on('exit',function(){	
-			if (serv.HTTPServer){
-				serv.HTTPServer.close();
+			if (serv.Stop){
+				serv.Stop();
 			}
 		});
 		this.ProcessRequest = function(req, res, url){
@@ -55,7 +55,7 @@ try{
 				context.finish(200, JSON.stringify(ManagedServer.CreateMap(context.router.Handlers.Main)));
 		    }
         });
-		this.MainRouter.for("Main", "/channels/>", channelsClient);
+		this.MainRouter.for("Main", "/channels/<", channelsClient);
 		if (this.Config.File){
 			this.module = require(Path.resolve(this.Config.File));
 			if (typeof this.module == "function"){
@@ -74,7 +74,7 @@ try{
 		}
 	};
 	
-	ManagedServer.prototype.Start = function(callback){
+	ManagedServer.prototype.Start = function(callback, server){
 		if (!module.parent){
 			console.log("Managed server v "  + 1.3 + " on " + this.Config.Host + ":" + this.Config.ProxyPort + " with " + this.Config.File);
 			if (!this.HTTPServer){
@@ -88,14 +88,18 @@ try{
 		else{		
 			console.log("Managed server v "  + 1.3 + " module on " + this.Config.Host + this.Config.Path +  " with " + this.Config.File);
 			this.Enabled = true;
+			this.HTTPServer = server;
 			if (typeof callback == "function"){
 				callback();
 			}
 		}
+		if (this.module && this.module.Start){
+			this.module.Start(this.HTTPServer);
+		}
 	};
 	
 	
-	ManagedServer.prototype.Stop = function(callback){
+	ManagedServer.prototype.Stop = function(callback, server){
 		if (!module.parent){
 			if (this.HTTPServer){
 				this.HTTPServer.close();
@@ -110,6 +114,9 @@ try{
 			if (typeof callback == "function"){
 				callback();
 			}
+		}
+		if (this.module && this.module.Stop){
+			this.module.Stop(this.HTTPServer);
 		}
 	};
 	

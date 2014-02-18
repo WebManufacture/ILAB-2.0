@@ -13,7 +13,7 @@
 		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.4/Modules.js"></script>
 		<script type="text/javascript" src="http://Services.web-manufacture.net/Base/v1.4/ui.js"></script>
 		
-		
+		<script src="/socket.io/socket.io.js"></script>
 		
 		<title>Конфигурация сервера</title>
 		
@@ -282,35 +282,64 @@
 			ConfManager = {};
 			
 			ConfManager.Init = function(){
-				Server = new KLabTunnel(null, false);
-				Server.channel = new HttpChannel("/channels/*/state", true);
-				Server.channel.onRead.subscribe(function(messages, arg){
+				Server = {};
+				//Server.channel = new HttpChannel("/channels/*/state", true);
+				/*Server.channel.onRead.subscribe(function(messages, arg){
 					Notify.ShowMessage(messages);
-				});
+				});*/
 				//Tunnel = Server.serverTunnel;
 				//Tunnel.OnMessage.subscribe(ConfManager.OnServerMessage);
+				
+				
+				var socket = io.connect('');
+				socket.on('connect', function(s){
+					console.log('connected');
+				});
+					
+				socket.on('message', function(messages){
+					console.log(messages);
+					if (messages.length >= 2 ){
+						var message = messages[0];
+						var node = messages[1];
+						var item = ConfManager.GetNode(node.key);
+						if (item){
+							ConfManager.UpdateItem(item, node);				
+						}
+						Notify.ShowMessage(node);
+					}
+				});
+				
+				var send = function(path, data){
+					socket.send(JSON.stringify({path : path, data: data}));
+				}
+				
 				Server.Start = function(item){
 					if (item && item.writeChannel){
 						item.writeChannel.send(".start");
 					}
+					send("/" + item.key + "/control.start");
 					//Server.add("/forks?key=" + key, null, ConfManager.stateChanged)
 				}
 				Server.Stop = function(item){
 					if (item && item.writeChannel){
 						item.writeChannel.send(".stop");
 					}
+					send("/" + item.key + "/control.stop");
 					//Server.del("/forks?key=" + key, ConfManager.stateChanged)
 				}
 				Server.Reset = function(item){
 					if (item && item.writeChannel){
 						item.writeChannel.send(".reset");
 					}
+					send("/" + item.key + "/control.reset");
 					//Server.set("/forks?key=" + key, null, ConfManager.stateChanged)
 				}				
 				Server.Remove = function(item){
-					Server.del("/nodes?key=" + key, ConfManager.stateChanged)
+					Server.del("/nodes?key=" + key, ConfManager.stateChanged);
+					send("/" + item.key + ".delete");
 				}
 				Server.Nodes = {};
+				
 			};
 			
 			ConfManager.stateChanged = function(result){
@@ -328,7 +357,7 @@
 			}
 			
 			ConfManager.UpdateItem = function(item, data){
-				item.set("@data-state", data);
+				item.set("@data-state", data.state);
 			}
 			
 			ConfManager.InitTable = function(){
@@ -339,28 +368,22 @@
 				window.open("Monitoring.htm?fork=" + item.key);
 			};
 			
+			ConfManager.GetNode = function(nodeId){
+				return DOM("#node_" + nodeId);
+			};
+			
 			ConfManager.FormatNodeItem = function(item){
 				item.routingType = item.get("@data-nodeType").toLowerCase(); 
 				item.add("." + item.routingType);
 				item.processType = item.get("@data-processType").toLowerCase(); 
 				item.add("." + item.processType);
 				item.key = item.get("@key");
+				item.id = "node_" + item.get("@key");
 				item.config = item.conf;
 				item.onclick = NodeItem.NodeClick;
-				item.readChannel = new HttpChannel("/channels/" + item.key + "/state", true);
-				item.writeChannel = new HttpChannel("/channels/" + item.key + "/control", false);
+				//item.readChannel = new HttpChannel("/channels/" + item.key + "/state", true);
+				//item.writeChannel = new HttpChannel("/channels/" + item.key + "/control", false);
 				Server.Nodes[item.key] = item.channel;
-				item.readChannel.onRead.subscribe(function(messages){
-					if (messages.length >= 2 ){
-						var message = messages[0];
-						if (message.source.indexOf("/" + item.key + "/state") == 0){
-							var arg = messages[1];
-							if (arg){
-								ConfManager.UpdateItem(item, arg);				
-							}
-						}
-					}
-				});
 			};
 			
 			ConfManager.LogsLoaded = function(result, status){
