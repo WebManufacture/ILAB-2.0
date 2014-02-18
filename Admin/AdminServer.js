@@ -25,8 +25,38 @@ AdminServer = {
 		localRouter.for("Main", "/Nodes/<", NodesRouter);
 		localRouter.for("Main", "/<", Files(config, logger));
 		ILab.ServiceUrl = (config.Host ? (config.Host + (config.Port ? ":" + config.Port : "")) : "") + (config.Path ? config.Path : "");
-	}
-}
+	},
+	
+	Start : function(server){
+		this.SockServer = require('socket.io').listen(server, { log: false });
+		this.SockServer.on('connection', function (socket) {
+			//console.log(socket);
+			var path = '/' + socket.namespace.name;
+			console.log("S>>> Channel subscribe: " + path);
+			var handler = function(data, arg){
+				socket.emit('message', [data, arg]);
+			}
+			Channels.on("/*.node", handler);		
+			socket.on('disconnect', function (socket) {
+				Channels.clear("/*.node", handler);
+				console.log("S<<< Channel unsubscribe: " + path);
+			});	
+			socket.on("message", function(message, data){
+				message = JSON.parse(message);
+				console.log(message);
+				Channels.emit(message.path, message.data);
+			});
+		});		
+	},
+	
+	RedirectSocket : function(context){
+		context.abort();
+		this.SockServer.handleRequest(context.req, context.res);
+		return false;
+	},
+};
+
+
 
 NodesRouter = {
 	GET : function(context){

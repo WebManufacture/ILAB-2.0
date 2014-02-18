@@ -25,8 +25,8 @@ try{
 		this.Config = args;
 		var serv = this;
 		process.on('exit',function(){	
-			if (serv.HTTPServer){
-				serv.HTTPServer.close();
+			if (serv.Stop){
+				serv.Stop();
 			}
 		});
 		this.ProcessRequest = function(req, res, url){
@@ -58,7 +58,7 @@ try{
 		}
 	};
 	
-	ProxiedServer.prototype.Start = function(callback){
+	ProxiedServer.prototype.Start = function(callback, server){
 		if (!module.parent){
 			console.log("Proxied server v "  + 1.3 + " on " + this.Config.Host + ":" + this.Config.ProxyPort + " with " + this.Config.File);
 			if (!this.HTTPServer){
@@ -72,18 +72,23 @@ try{
 		else{		
 			console.log("Proxied server v "  + 1.3 + " module on " + this.Config.Host + this.Config.Path +  " with " + this.Config.File);
 			this.Enabled = true;
+			this.HTTPServer = server;
 			if (typeof callback == "function"){
 				callback();
 			}
 		}
+		if (this.module && this.module.Start){
+			this.module.Start(this.HTTPServer);
+		}
 	};
 	
 	
-	ProxiedServer.prototype.Stop = function(callback){
+	ProxiedServer.prototype.Stop = function(callback, server){
 		if (!module.parent){
 			if (this.HTTPServer){
 				this.HTTPServer.close();
 				this.HTTPServer = null;
+				
 				if (typeof callback == "function"){
 					callback();
 				}
@@ -91,9 +96,13 @@ try{
 		}
 		else{
 			this.Enabled = false;
+			this.HTTPServer = server;
 			if (typeof callback == "function"){
 				callback();
 			}
+		}
+		if (this.module && this.module.Stop){
+			this.module.Stop(this.HTTPServer);
 		}
 	};
 	
