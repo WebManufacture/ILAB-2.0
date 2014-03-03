@@ -1,0 +1,41 @@
+[
+	{
+		"id" : "Routing",
+		"Routes" : {
+			"http://default/Config/>": "admin/config",
+			"http://klab.web-manufacture.net" : "int://KLab", 
+			"http://ilab.web-manufacture.net" : "int://ILab",
+			"http://services.web-manufacture.net" : "int://Sites/Services",
+			"http://modules.web-manufacture.net" : "int://Sites/Modules",
+			"http://ststem.web-manufacture.net" : "int://Sites/System",
+			"http://web-manufacture.net" : "int://Sites/WebManufactureSite",
+
+			"http://roboplatform.web-manufacture.net/Store/>" : "int://RoboPlatform/Store",
+			"http://roboplatform.web-manufacture.net/Robomind/>" : "int://RoboPlatform/Sites/RoboMind",	
+			"http://roboplatform.web-manufacture.net:5000/robomind/>" : "int://RoboPlatform/Services/RoboMind",
+
+			"http://identification.web-manufacture.net/>" : "int://Identification/Site",
+			"http://identification.web-manufacture.net/Identification/>" : "int://Identification/Service",
+
+			"http://cnc.web-manufacture.net/>" : "int://CncPlatform/Sites/Main",
+			"http://cnc.web-manufacture.net:6670/>" : "int://CncPlatform/Services/CncTable",
+
+			"http://roboplatform.web-manufacture.net/Emulator/>" : "int://TcpEmulator/ViewState",
+			"sock://roboplatform.web-manufacture.net/Emulator/>" : "int://TcpEmulator/SockService",
+			"tcp://localhost:6600" : "int://TcpEmulator/TcpService",
+			"channels://uart.output" : "int://TcpEmulator/UartSender",
+			"channels://uart.input" : "int://TcpEmulator/UartSender"
+		}
+	},
+	{
+		"id":"Admin",
+		"Process":"internal",
+		"HTTP" : "/Config/>",
+		"Path" : "/Config/>",
+		"Type" : "managed",
+		"basepath":"./ILAB/Admin",
+		"Frame":"./ILAB/ManagedServer",
+		"File":"./ILAB/Admin/AdminServer.js",
+		"State":"working"
+	}
+]

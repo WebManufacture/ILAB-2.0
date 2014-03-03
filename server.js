@@ -2,13 +2,13 @@ var http = require('http');
 var Url = require('url');
 var Path = require('path');
 var debug = require('debug');
-require(Path.resolve("./ILAB/Modules/Node/Utils.js"));
-var logger = require(Path.resolve("./ILAB/Modules/Node/Logger.js"));
-var Forks = require(Path.resolve("./ILAB/Modules/Node/Forks.js"));
-var Files = require(Path.resolve("./ILAB/Modules/Node/Files.js"));
+require(Path.resolve("./ILAB/Modules/Utils.js"));
+var logger = require(Path.resolve("./ILAB/Modules/Logger.js"));
+var Forks = require(Path.resolve("./ILAB/Modules/Forks.js"));
+var Files = require(Path.resolve("./ILAB/Modules/Files.js"));
 require(Path.resolve("./ILAB/Modules/Channels.js"));
-var channelsClient = require(Path.resolve("./ILAB/Modules/Node/ChannelsClient.js"));
-var DBProc = require(Path.resolve("./ILAB/Modules/Node/DBProc.js"));
+var channelsClient = require(Path.resolve("./ILAB/Modules/ChannelsClient.js"));
+var DBProc = require(Path.resolve("./ILAB/Modules/DBProc.js"));
 var fs = require('fs');
 var httpProxy = require('http-proxy');
 var proxy = new httpProxy.createProxyServer({});
@@ -176,6 +176,18 @@ IsolatedNode = function(rr, config){
 		node.State = "error";
 		console.log(rr.id + " '" + rr.execFile + "' - " + (rr.Host + ":" + node.ProxyPort) + " error".error);
 		//console.log(error);
+	});
+	Channels.on("/" + this.id + "/control.start", function(){
+		console.log("Starting: " + node.id);
+		node.Start();
+	});
+	Channels.on("/" + this.id + "/control.stop", function(){
+		console.log("Stopping: " + node.id);
+		node.Stop();
+	});	
+	Channels.on("/" + this.id + "/control.reset", function(){
+		console.log("Reset: " + node.id);
+		node.Reset();
 	});
 }
 
@@ -577,7 +589,7 @@ ILabRouter.CreateServer = function (Port){
 }
 
 ILabRouter.CreateRouter = function(port, host, config){
-	var router = require(Path.resolve("./ILAB/Modules/Node/Router.js"))();
+	var router = require(Path.resolve("./ILAB/Modules/Router.js"))();
 	router.map("Security", {});
 	router.map("Main", 
 			   {
