@@ -377,15 +377,19 @@ Channel.prototype._callHandlerAsync = function(route, callback, param, args){
 	var param3 = args[3];	
 	var param4 = args[4];
 	var param5 = args[5];
-	if (route.callplan){
-		route.callplan.push(function(){
+	function callCallback(){
+		if (channel == global.Channels){
 			return callback.call(route, param, param1, param2, param3, param4, param5);
-		});
+		}
+		else{
+			return callback.call(channel, param, param1, param2, param3, param4, param5);
+		}
+	}
+	if (route.callplan){
+		route.callplan.push(callCallback);
 	}
 	else{
-		setTimeout(function(){
-			return callback.call(route, param, param1, param2, param3, param4, param5);
-		}, 4);
+		setTimeout(callCallback, 2);
 	}
 }
 

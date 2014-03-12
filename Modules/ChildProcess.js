@@ -2,7 +2,11 @@ require(require("path").resolve("./ILAB/Modules/Utils.js"));
 if (global.Channels){
 	process.on("message", function(pmessage){
 		if (pmessage == 'EXITING'){
-			process.exit();	
+			process.emit("EXITING");
+			setTimeout(function(){
+				console.log("CHILD PROCESS EXITED BY TIMEOUT 4s !".warn);
+				process.exit();
+			}, 4000);
 		}
 		if (typeof pmessage == "object"){
 			if (pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
@@ -21,13 +25,13 @@ if (global.Channels){
 				}
 				else{
 					console.log("Anonymous client DETECTED");				
-				}
+				}			
 				Channels.followToGlobal(pmessage.pattern);
 			}
 			if (pmessage.type && pmessage.type == "channelMessage"){
 				var dateEnd = new Date();
 				var dateStart = new Date(pmessage.date);
-				console.log("-> " + pmessage.args[0]);
+				//console.log("-> " + pmessage.args[0]);
 				Channels.emit.apply(Channels, pmessage.args);
 			}
 		}
@@ -45,13 +49,14 @@ if (global.Channels){
 	Channels.followed = {};
 	
 	Channels.followToGlobal = function(pattern){
+		//console.log("--> Following " + pattern);	
 		Channels.on(pattern, function(message){
-			var params = [];
+			var params = [];			
+			//console.log("<- " + message.source);
 			params.push(message.source);
 			for (var i = 1; i < arguments.length; i++){
 				params.push(arguments[i]);
 			}
-			//console.log("<- " + pattern);
 			process.send({ type : "channelMessage", args : params });
 		});
 	};
@@ -59,4 +64,11 @@ if (global.Channels){
 	Channels.emitToGlobal = function(message){
 		process.send({ type : "channelMessage", args : arguments });
 	};
+	
+	var subscribers = process.argv[3];
+	if (subscribers) subscribers = JSON.parse(subscribers);
+		
+	for (var pattern in subscribers){
+		Channels.followToGlobal(pattern);
+	}
 }

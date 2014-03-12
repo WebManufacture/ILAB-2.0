@@ -1,4 +1,4 @@
-var util = require("util");
+useModule('utils.js');
 var EventEmitter = require("events").EventEmitter;
 
 function Node(parentNode, item){
@@ -37,20 +37,6 @@ global.Node.States = {
 
 global.Node.Type = "base";
 
-global.Node.Inherit = function (Child, Parent, mixin)
-{
-	if (!Parent) Parent = global.Node;
-	if (typeof Parent == "object"){
-		mixin = Parent;
-		Parent = global.Node;
-	}
-	util.inherits(Child, Parent);
-	for (var item in mixin){
-		Child.prototype[item] = mixin[item];
-	}
-	Child.base = Parent.prototype;
-}
-
 global.Node._statuses = {};
 
 for (var i = 0; i < Node.Statuses.length; i++){
@@ -63,18 +49,29 @@ global.Node.StatusToInt = function(status){
 	return global.Node._statuses[status];
 }
 
-Node.Inherit(Node, EventEmitter, {
+global.Node.Inherit = function(Child, mixin){
+	return Inherit(Child, global.Node, mixin);
+}
+
+Inherit(Node, EventEmitter, {
 	init : function(config){
-		this.config = config;		
+		if (!this.id){
+			if (!config.id) config.id = "anonimous";
+			this.id = (config.id + "").toLowerCase();
+		}
+		this.config = config;	
+		return true;
 	},
 	
 	Init : function(item){
 		this.State = Node.States.INITIALIZING;		
 		if (typeof this.init == 'function')
 		{
-			this.init(item);
+			if (this.init(item)) this.State = Node.States.INITIALIZED;
 		}
-		this.State = Node.States.INITIALIZED;
+		else{
+			this.State = Node.States.INITIALIZED;
+		}
 	},
 	
 	Load : function(callback){
@@ -82,8 +79,8 @@ Node.Inherit(Node, EventEmitter, {
 		if (this._state == Node.States.INITIALIZED || this._state == Node.States.UNLOADED){
 			this.State = Node.States.LOADING;
 			var result = null;
-			var asyncLoadFunc = function(){
-				this.State = Node.States.LOADED;
+			function asyncLoadFunc(){
+				self.State = Node.States.LOADED;
 				if (typeof callback == 'function'){
 					callback.apply(self, arguments)
 				}
@@ -94,7 +91,11 @@ Node.Inherit(Node, EventEmitter, {
 			else{
 				result = true;
 			}
-			if (result) setImmediate(asyncLoadFunc);
+			if (result) {
+				setImmediate(function(){
+					asyncLoadFunc();
+				});
+			}
 		}
 		return result;
 	},
@@ -105,7 +106,7 @@ Node.Inherit(Node, EventEmitter, {
 			this.State = Node.States.UNLOADING;
 			var result = null;
 			var asyncUnloadFunc = function(){
-				this.State = Node.States.UNLOADED;
+				self.State = Node.States.UNLOADED;
 				if (typeof callback == 'function'){
 					callback.apply(self, arguments)
 				}
@@ -116,7 +117,11 @@ Node.Inherit(Node, EventEmitter, {
 			else {
 				result = true;
 			}
-			if (result) setImmediate(asyncUnloadFunc);
+			if (result) {
+				setImmediate(function(){
+					asyncUnloadFunc();
+				});
+			}
 		}
 		return result;
 	},
@@ -209,7 +214,9 @@ Node.Inherit(Node, EventEmitter, {
 	},
 	
 	Process : function(callback){
-		if (typeof this.process == 'function') return this.process.apply(this.arguments);
+		if (this._state == Node.States.WORKING)	{
+			if (typeof this.process == 'function') return this.process.apply(this.arguments);
+		}
 	},
 		
 	Serialize : function(){

@@ -31,7 +31,7 @@ global.Fork = function(path, args, id, channelTags){
 		this.on("/process", function(route){
 			if (!route) return true;
 			//console.log("internal message detected: " + route.current);
-			if (this.is("/*/process.internal")){
+			if (this.is("/fork/*/process.internal")){
 				return false;
 			};
 			if (fork.process && fork.code == Fork.STATUS_WORKING){
@@ -57,9 +57,11 @@ global.Fork = function(path, args, id, channelTags){
 		});
 		Channels.tunnelTo(this.channelId + "/process", function(path){
 			if (!path) return true;
-			//console.log("SUBSCRIBE DETECTED:".warn );
-			//console.log(path);
-			if (!fork.subscribeToChild(path.current)) return false;
+			path = path.current;
+			if (path.length > 0 && path[0] == '/'){
+				path = path.replace("/", '');
+			}
+			fork.subscribeTo(path);
 			return true;
 		});
 	}
@@ -113,7 +115,9 @@ Fork.prototype = {
 		if (args.wd){
 			wd = args.wd;
 		}
-		var cp = this.process = ChildProcess.fork(this.path, [JSON.stringify(args)], { silent: false, cwd: cwd, env : { workDir: wd, isChild : true } });
+		var argsA = [JSON.stringify(args)];
+		argsA.push(JSON.stringify(this.subscribers));
+		var cp = this.process = ChildProcess.fork(this.path, argsA, { silent: false, cwd: cwd, env : { workDir: wd, isChild : true } });
 		this.logger.debug("fork started " + this.path);
 		this.code = Fork.STATUS_WORKING;	
 		if (callback){
@@ -130,10 +134,6 @@ Fork.prototype = {
 		cp.on("message", function(){
 			fork._messageEvent.apply(fork, arguments);
 		});		
-		for (var pattern in this.subscribers){
-			this.subscribeToChild(pattern);
-			console.log("STCH: " + pattern);
-		}
 		return cp;
 	},
 	
@@ -210,14 +210,18 @@ Fork.prototype = {
 		}		
 	},
 	
+	subscribeTo : function(pattern){
+		if (this.subscribers[pattern]) {
+			this.subscribers[pattern]++;
+		}
+		else{
+			this.subscribers[pattern] = 1;
+		}
+		return this.subscribeToChild(pattern);
+	},
+	
 	subscribeToChild : function(pattern){
 		if (this.process && this.code == Fork.STATUS_WORKING){
-			if (this.subscribers[pattern]) {
-				this.subscribers[pattern]++;
-			}
-			else{
-				this.subscribers[pattern] = 1;
-			}
 			this.process.send({ type : "channelControl", pattern : pattern, clientId : this.id });
 			return true;
 		}	
@@ -226,14 +230,22 @@ Fork.prototype = {
 		
 	close : function(){
 		if (this.process){
+			var self = this;
 			var proc = this.process;
-			this.logger.debug("fork close - " + this.path);
+			var exited = false;
 			this.process.send("EXITING");
-			setTimeout(function(){
-				proc.kill('SIGINT');	
-			}, 400);
+			var exitTimeout = setTimeout(function(){
+				if (!exited){
+					console.log(("Process: " + self.id + " KILLED BY TIMEOUT!").red);
+					proc.kill('SIGINT');	
+				}
+			}, 5000);
+			proc.on("exit", function(){
+				exited = true;
+				clearTimeout(exitTimeout);
+			});			
 		}
-	},
+	}
 };
 
 var ForksRouter = {
