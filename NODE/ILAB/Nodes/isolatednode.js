@@ -10,7 +10,7 @@ global.IsolatedNode = IsolatedNode;
 
 global.IsolatedNode.Type = "isolated";
 
-Node.Inherit(IsolatedNode, ManagedNode, {
+Inherit(IsolatedNode, ManagedNode, {
 	init : function(config){
 		return true;
 	},
@@ -18,7 +18,12 @@ Node.Inherit(IsolatedNode, ManagedNode, {
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
-		return true;
+		if (IsolatedNode.base.load){
+			return IsolatedNode.base.load.call(this, callback);
+		}
+		else{
+			return true;
+		}
 	}
 });
 

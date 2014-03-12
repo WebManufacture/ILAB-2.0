@@ -1,3 +1,17 @@
+var util = require("util");
+
+if (!global.Inherit)
+global.Inherit = function (Child, Parent, mixin)
+{
+	util.inherits(Child, Parent);
+	if (mixin){
+		for (var item in mixin){
+			Child.prototype[item] = mixin[item];
+		}
+	}
+	Child.base = Parent.prototype;
+}
+
 global.extend = function (Child, Parent) {
     var F = function() { }
     F.prototype = Parent.prototype

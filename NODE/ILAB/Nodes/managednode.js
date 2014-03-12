@@ -26,13 +26,13 @@ global.Node.Inherit(ManagedNode, {
 		if (ManagedNode.base.init){
 			ManagedNode.base.init.call(this, config);
 		}
-		this.defaultState = Node.StatusToInt(this.config.State);
+		this.defaultState = Node.StatusToInt(config.State);
+		return true;
 	},
 
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
-		console.log("loading " + this.id + "  d:" + Node.States[this.defaultState]);
 		if (ManagedNode.base.load){
 			return ManagedNode.base.load.call(this, callback);
 		}

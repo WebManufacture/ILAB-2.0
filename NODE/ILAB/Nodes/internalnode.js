@@ -1,5 +1,6 @@
 useNodeType("node.js");
-useModule("logger.js");
+useNodeType("managednode.js");
+//useModule("logger.js");
 
 function InternalNode (parentNode, item){
 	InternalNode.super_.apply(this, arguments);
@@ -10,7 +11,7 @@ global.InternalNode = InternalNode;
 
 global.InternalNode.Type = "internal";
 
-Node.Inherit(InternalNode, ManagedNode, {
+Inherit(InternalNode, ManagedNode, {
 	init : function(item){
 		if (InternalNode.base.init){
 			InternalNode.base.init.call(this, item);
@@ -47,6 +48,7 @@ Node.Inherit(InternalNode, ManagedNode, {
 			this.module.Init(item, ILab.Config, logger, serv ? serv.router : null);
 		}
 		var node = this;*/
+		return true;
 	},
 
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
@@ -65,7 +67,12 @@ Node.Inherit(InternalNode, ManagedNode, {
 			console.log("Reset: " + node.id);
 			node.Reset();
 		});*/
-		return true;
+		if (InternalNode.base.load){
+			return InternalNode.base.load.call(this, callback);
+		}
+		else{
+			return true;
+		}
 	}
 });
 
