@@ -36,7 +36,7 @@
 			"Type" : "managed", "File":"./ConfigService/AdminServer.js", "basepath":"./ConfigService/Admin", "State":"working"
 		},
 		"Admin" : {
-			"Type" : "internal", "File":"./ConfigService/AdminServer.js", "basepath":"./ConfigService/Admin", "State":"working"
+			"Type" : "internal", "File":"", "basepath":"./ConfigService/Admin", "State":"working"
 		},
 		"TcpEmulator": {"Type":"isolated", "File":"./PROJECTS/TcpEmulator/Main.js","State":"idle", "port":5012}
 	}

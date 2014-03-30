@@ -109,10 +109,15 @@ Node.Inherit(FrameService, {
 				global.NodesByTypes = {};
 				var nodes = fs.readdirSync(Path.resolve(global.NodesPath));
 				for (var i = 0; i < nodes.length; i++){
-					var node = require(Path.resolve(global.NodesPath + nodes[i]));
-					if (node && node.Type){
-						NodesByTypes[node.Type] = node;
-						this.logger.info("Support node type: <#08A:{0}>", node.Type);
+					try{
+						var node = require(Path.resolve(global.NodesPath + nodes[i]));
+						if (node && node.Type){
+							NodesByTypes[node.Type] = node;
+							this.logger.info("Support node type: <#08A:{0}>", node.Type);
+						}
+					}
+					catch(error){
+						this.logger.info("Node type load error: <#08A:{0}> : {1}", nodes[i], error);
 					}
 				}
 			}
@@ -267,7 +272,6 @@ Node.Inherit(FrameService, {
 			return true;
 		}
 	},
-
 
 	SaveConfig : function(){
 		if (this.ConfigFile){
