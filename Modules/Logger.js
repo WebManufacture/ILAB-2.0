@@ -25,11 +25,12 @@ global.info = Logger.info = function(text) {
 }
 
 global.error = Logger.error = function(error) {
-    if (typeof error == "string") {
-		log(Logger._parseArguments(arguments), "error");
-        return;
-    }
-    global.log({ message: error.message, stack: error.stack }, "error");
+	if (typeof error == "string") {
+		global.log(Logger._parseArguments(arguments), "error");
+		return;
+	}
+	arguments[0] = { message: error.message, stack: error.stack };
+	global.log(Logger._parseArguments(arguments), "error");
 }
 
 global.debug = Logger.debug = function(text) {
@@ -40,21 +41,11 @@ global.warn = Logger.warn = function(text) {
     global.log(Logger._parseArguments(arguments), "warn");
 }
 
-global.log  = Logger.log = function(value, type) {
-	if (type + "" == "true" || !global.Channels) {
-		type = "?";
-		console.log(value);
-	}
-    if (!type) {
-        type = "?";
-    }
-    if (global.Channels) {
-		value = { content: value, datetime: new Date(), type: type };
-        if (!Channels.emit("log." + type, value)){
-			console.log(value);
-		}
-    }
+global.log = Logger.log = function(value, type) {
+	Logger.prototype._localLog.call(this, value, type);
 }
+
+global.useConsole = true;
 
 Logger.prototype = {
 	info: function(text) {
@@ -83,40 +74,45 @@ Logger.prototype = {
 			type = "?";
 		}
 		if (this.useConsole || !global.Channels){
-			var content = '';
-			var color = '';
-			var text = value + "";
-			var mode = 0;
-			for (var i = 0; i < text.length; i++){
-				if (mode == 0){
-					if (text[i] == ">"){
-						content += " \u001b" + "[39m";
-						continue;
-					}
-					if (text[i] == "<"){
-						mode = 1;
-						color = '';
-						continue;
-					}
-					content += text[i];
-					continue;
-				}
-				if (mode == 1){
-					if (text[i] == ">" || text[i] == ":"){
-						switch(color){
-							case 'red' : color = 31; break;
-							default:
-								color = 1;
+			if (typeof value == 'string'){
+				var content = '';
+				var color = '';
+				var text = value + "";
+				var mode = 0;
+				for (var i = 0; i < text.length; i++){
+					if (mode == 0){
+						if (text[i] == ">"){
+							content += " \u001b" + "[39m";
+							continue;
 						}
-						content += "\u001b" + "[" + color + "m";
-						mode = 0;
+						if (text[i] == "<"){
+							mode = 1;
+							color = '';
+							continue;
+						}
+						content += text[i];
 						continue;
 					}
-					color += text[i];
-					continue;
+					if (mode == 1){
+						if (text[i] == ">" || text[i] == ":"){
+							switch(color){
+								case 'red' : color = 31; break;
+								default:
+									color = 1;
+							}
+							content += "\u001b" + "[" + color + "m";
+							mode = 0;
+							continue;
+						}
+						color += text[i];
+						continue;
+					}
 				}
+				console.log(content);
 			}
-			console.log(content);
+			else{
+				console.log(value);
+			}
 		}
 		if (global.Channels) {
 			value = { content: value, datetime: new Date(), type: type };

@@ -79,7 +79,7 @@ Inherit(Node, EventEmitter, {
 		if (this._state == Node.States.INITIALIZED || this._state == Node.States.UNLOADED){
 			this.State = Node.States.LOADING;
 			var result = null;
-			function asyncLoadFunc(){
+			function asyncLoadFunc(value){
 				self.State = Node.States.LOADED;
 				if (typeof callback == 'function'){
 					callback.apply(self, arguments)
@@ -91,10 +91,18 @@ Inherit(Node, EventEmitter, {
 			else{
 				result = true;
 			}
-			if (result) {
-				setImmediate(function(){
-					asyncLoadFunc();
-				});
+			if (result == 'error') {
+				self.State = Node.States.INITIALIZED;
+				if (typeof callback == 'function'){
+					callback.apply(self, arguments);
+				}
+			}
+			else{
+				if (result) {
+					setImmediate(function(){
+						asyncLoadFunc();
+					});
+				}
 			}
 		}
 		return result;
@@ -126,9 +134,13 @@ Inherit(Node, EventEmitter, {
 		return result;
 	},
 		
-	Reload : function(callback){
+	Reload : function(newConfig, callback){
 		var self = this;
 		var result = null;
+		if (typeof newConfig == 'function')	{
+			callback = newConfig;
+			newConfig = undefined;
+		}
 		if (typeof this.reload == 'function')
 		{
 			return this.reload(callback);
@@ -139,6 +151,9 @@ Inherit(Node, EventEmitter, {
 			}
 		}
 		this.Unload(function(){
+			if (newConfig){
+				self.Init(newConfig);
+			}
 			self.Load(asyncLoadFunc);
 		});
 	},
@@ -179,7 +194,9 @@ Inherit(Node, EventEmitter, {
 	Sleep : function(){		
 		if (this._state == Node.States.WORKING)	{
 			if (typeof this.sleep == 'function') var result = this.sleep();
-			this.State = Node.States.SLEEP;			
+			if (result){
+				this.State = Node.States.SLEEP;			
+			}
 		}
 		return result;
 	},
