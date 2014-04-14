@@ -78,23 +78,21 @@ Inherit(NodeGroup, ManagedNode, {
 	load : function(callback){
 		try{
 			var self = this;
-			var LoadWF = new Async.EventFall(function(){
-				if (NodeGroup.base.load){
-					NodeGroup.base.load.call(self, callback);
-				}						
-				else{
-					callback();
-				}
-			});
 			
 			for (var id in self.Nodes){
 				var node = self.Nodes[id];
-				LoadWF.subscribe(node, 'loaded');
 				if (node.defaultState >= Node.States.LOADED || node.defaultState < Node.States.UNLOADING){
+					console.log("Loading");
 					node.Load();
 				}
 			}
-			LoadWF.check();
+
+			if (NodeGroup.base.load){
+				NodeGroup.base.load.call(self, callback);
+			}						
+			else{
+				callback();
+			}
 		}
 		catch(err){
 			this.logger.error(err);
