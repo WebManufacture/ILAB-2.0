@@ -1,5 +1,7 @@
 useNodeType("node.js");
 useNodeType("managednode.js");
+useModule("logger.js");
+var Path = require('path');
 
 function IsolatedNode (parentNode, item){
 	IsolatedNode.super_.apply(this, arguments);
@@ -12,140 +14,70 @@ global.IsolatedNode.Type = "isolated";
 
 Inherit(IsolatedNode, ManagedNode, {
 	init : function(config){
+		if (IsolatedNode.base.init){
+			IsolatedNode.base.init.call(this, config);
+		}
+		this.path = Path.resolve(config.file);
+		this.args = config;
+		this.code = 0;
+		this.logger = logModule.create(id + "/log");
+		this.subscribers = {};
+		var fork = this;
+		if (global.Channels){
+			this._on("", function(route){
+				if (!route) return true;
+				//console.log("internal message detected: " + route.current);
+				if (this.is("/fork/*/process.internal")){
+					return false;
+				};
+				if (fork.process && fork.code == Fork.STATUS_WORKING){
+					//console.log(this); 
+					var params = [];
+					params.push(route.current);
+					for (var i = 1; i < arguments.length; i++){
+						params.push(arguments[i]);
+					}
+					fork.process.send({ type : "channelMessage", route : route.current, args : params, date : new Date() });
+					return true;
+				}
+				return true;
+			});	
+			Channels.tunnelTo(this.id, function(path){
+				if (!path) return true;
+				path = path.current;
+				if (path.length > 0 && path[0] == '/'){
+					path = path.replace("/", '');
+				}
+				fork._subscribeTo(path);
+				return true;
+			});
+		}
 		return true;
 	},
-
+	
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
-		if (IsolatedNode.base.load){
-			return IsolatedNode.base.load.call(this, callback);
-		}
-		else{
-			return true;
-		}
-	}
-});
-
-
-ForkNode = function(path, args, id, channelTags){
-	this.path = path;
-	if (!args) args = [];
-	this.args = args;
-	this.code = 0;
-	this.id = id;	
-	if (!this.id) {
-		this.id = "fork" + (Math.random() + "").replace("0.", "");
-	}	
-	this.logger = logModule.create(id + "/log");
-	this.subscribers = {};
-	var fork = this;
-	if (global.Channels){
-		this.on("", function(route){
-			if (!route) return true;
-			this.forkId = fork.id;	
-			route.forkId = fork.id;
-			return true;
-		});	
-		this.on("/process", function(route){
-			if (!route) return true;
-			//console.log("internal message detected: " + route.current);
-			if (this.is("/fork/*/process.internal")){
-				return false;
-			};
-			if (fork.process && fork.code == Fork.STATUS_WORKING){
-				//console.log(this); 
-				var params = [];
-				params.push(route.current);
-				for (var i = 1; i < arguments.length; i++){
-					params.push(arguments[i]);
-				}
-				fork.process.send({ type : "channelMessage", route : route.current, args : params, date : new Date() });
-				return true;
-			}
-			return true;
-		});		
-		this.on("/control.start", function(message){
-			fork.start();
-		});
-		this.on("/control.stop", function(message){
-			fork.stop();
-		});
-		this.on("/control.reset", function(message){
-			fork.reset();
-		});
-		Channels.tunnelTo(this.channelId + "/process", function(path){
-			if (!path) return true;
-			path = path.current;
-			if (path.length > 0 && path[0] == '/'){
-				path = path.replace("/", '');
-			}
-			fork.subscribeTo(path);
-			return true;
-		});
-	}
-	return this;
-};
-
-ForkNode.Statuses = ["new", "stopped", "exited", "reserved", "reserved", "reserved", "reserved", "working"];
-
-ForkNode.STATUS_NEW = 0;
-ForkNode.STATUS_STOPPED = 1;
-ForkNode.STATUS_EXITED = 2;
-ForkNode.STATUS_WORKING = 7;
-
-Fork.prototype = {
-	toString : function(){
-		return JSON.stringify(this.status());
-	},
-	
-	reset : function(args){		
-		this.logger.debug("fork resetting " + this.path);
-		if (this.code < Fork.STATUS_WORKING){
-			return this.start();
-		};	
-		var fork = this;
-		if (!args) args = this.args;
-		this.process.once("exit", function(){
-			fork.start(args);
-		});
-		this.stop();
-		return this.process;
-	},
-	
-	start : function(args){
-		if (this.code >= Fork.STATUS_WORKING){
-			return;	
-		}		
-		if (typeof (args) == 'function'){
-			var callback = args;
-			args = this.args;
-		}
-		if (!args) args = this.args;
-		if (typeof (args) == 'string'){
-			args = JSON.parse(args);	
-		}
-		if (args) this.args = args;
+		var args = this.args;
 		var cwd =  process.cwd();
-		if (args.cwd){
+		if (!args.cwd){
 			cwd = args.cwd;
 		}
 		var wd =  paths.dirname(this.path);
-		if (args.wd){
+		if (!args.wd){
 			wd = args.wd;
 		}
 		var argsA = [JSON.stringify(args)];
 		argsA.push(JSON.stringify(this.subscribers));
 		var cp = this.process = ChildProcess.fork(this.path, argsA, { silent: false, cwd: cwd, env : { workDir: wd, isChild : true } });
 		this.logger.debug("fork started " + this.path);
-		this.code = Fork.STATUS_WORKING;	
 		if (callback){
 			var fork = this;
-			this.once("/state", function(){
-				callback.call(fork, Fork.Statuses[fork.code]);	
+			fork._once("/state", function(){
+				callback.call();
 			});
 		}
-		this.emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
+		this._emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
 		var fork = this;
 		cp.on("exit", function(){
 			fork._exitEvent.apply(fork, arguments);
@@ -153,24 +85,51 @@ Fork.prototype = {
 		cp.on("message", function(){
 			fork._messageEvent.apply(fork, arguments);
 		});		
-		return cp;
+		return false;
+	},
+	
+	unload : function(callback){
+		if (this.process){
+			var self = this;
+			var proc = this.process;
+			var exited = false;
+			this.process.send("EXITING");
+			var exitTimeout = setTimeout(function(){
+				if (!exited){
+					console.log(("Process: " + self.id + " KILLED BY TIMEOUT!").red);
+					proc.kill('SIGINT');	
+				}
+				callback();
+			}, 5000);
+			proc.on("exit", function(){
+				exited = true;
+				clearTimeout(exitTimeout);
+				callback();
+			});			
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	},
+	
+	start : function(callback){
+		this.process.send("START");
+		return true;
 	},
 	
 	stop : function(callback){
-		if (this.code < Fork.STATUS_WORKING){
-			return;	
-		}
-		if (callback){
-			var fork = this;
-			this.once(".status", function(){
-				callback.call(fork, Fork.Statuses[fork.code]);	
-			});
-		}
-		this.close();
-		return this.process;
+		this.process.send("STOP");
+		return true;
 	},
 	
-	status : function(){
+	sleep : function(){
+		this.process.send("SLEEP");
+		return true;
+	},
+			
+	statusString : function(){
 		var stat = {id : this.id, code : this.code, status : Fork.Statuses[this.code], log : this.logFile, path: this.path, args: this.args};
 		if (this.process){
 			stat.pid = this.process.pid;	
@@ -179,9 +138,8 @@ Fork.prototype = {
 	},
 	
 	_exitEvent : function(signal){
-		this.code = Fork.STATUS_EXITED;
-		this.emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
-		this.emit(".exit", signal);
+		this._emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
+		this._emit(".exit", signal);
 		this.logger.debug("fork exited " + this.path);
 	},
 	
@@ -205,66 +163,39 @@ Fork.prototype = {
 	},
 	
 	_errEvent : function(message){
-		this.emit(".error", message);
 		this.logger.error(message);
-	},
+	},	
 	
-	
-	emit : function(message){
+	_emit : function(message){
 		if (global.Channels){
 			message = this.channelId + message;
 			global.Channels.emit.apply(Channels, arguments);
 		}		
 	},
 	
-	on : function(message){
+	_on : function(message){
 		message = this.channelId + message;
 		Channels.on.apply(Channels, arguments);
 	},
 	
-	once : function(message){
+	_once : function(message){
 		if (global.Channels){
 			message = this.channelId + message;
 			Channels.once.apply(Channels, arguments);
 		}		
 	},
 	
-	subscribeTo : function(pattern){
+	_subscribeTo : function(pattern){
 		if (this.subscribers[pattern]) {
 			this.subscribers[pattern]++;
 		}
 		else{
 			this.subscribers[pattern] = 1;
 		}
-		return this.subscribeToChild(pattern);
+		this.process.send({ type : "channelControl", pattern : pattern, clientId : this.id });
+		return true;
 	},
-	
-	subscribeToChild : function(pattern){
-		if (this.process && this.code == Fork.STATUS_WORKING){
-			this.process.send({ type : "channelControl", pattern : pattern, clientId : this.id });
-			return true;
-		}	
-		return false;
-	},
-		
-	close : function(){
-		if (this.process){
-			var self = this;
-			var proc = this.process;
-			var exited = false;
-			this.process.send("EXITING");
-			var exitTimeout = setTimeout(function(){
-				if (!exited){
-					console.log(("Process: " + self.id + " KILLED BY TIMEOUT!").red);
-					proc.kill('SIGINT');	
-				}
-			}, 5000);
-			proc.on("exit", function(){
-				exited = true;
-				clearTimeout(exitTimeout);
-			});			
-		}
-	}
-};
+});
+
 
 module.exports = IsolatedNode;

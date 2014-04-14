@@ -1,4 +1,5 @@
 useModule('utils.js');
+var Logger = useModule("logger.js");
 var EventEmitter = require("events").EventEmitter;
 
 function Node(parentNode, item){
@@ -9,20 +10,21 @@ function Node(parentNode, item){
 	if (item){
 		if (!item.id) item.id = "anonimous";
 		this.id = (item.id + "").toLowerCase();
+		this.logger = new Logger(this.id, false);
 		var self = this;
 		setImmediate(function(){
 			self.Init(item)
 		});
-	}
+	};
 };
 
 global.Node = Node;
 
-global.Node.Statuses = ["null", "initializing", "initialized", "loading", "loaded", "starting", "working", "sleep", "stopping", "stopped", "unloading", "unloaded"];
+global.Node.Statuses = ["null", "error", "initialized", "loading", "loaded", "starting", "working", "sleep", "stopping", "stopped", "unloading", "unloaded"];
 
 global.Node.States = {
 	NULL : 0, 
-	INITIALIZING : 1,
+	ERROR : 1,
 	INITIALIZED : 2, 
 	LOADING : 3,
 	LOADED : 4, 
@@ -64,7 +66,6 @@ Inherit(Node, EventEmitter, {
 	},
 	
 	Init : function(item){
-		this.State = Node.States.INITIALIZING;		
 		if (typeof this.init == 'function')
 		{
 			if (this.init(item)) this.State = Node.States.INITIALIZED;
@@ -235,6 +236,12 @@ Inherit(Node, EventEmitter, {
 			if (typeof this.process == 'function') return this.process.apply(this.arguments);
 		}
 	},
+	
+	Ping : function(callback){
+		if (this._state == Node.States.WORKING)	{
+			if (typeof this.ping == 'function') return this.ping.apply(this.arguments);
+		}
+	},
 		
 	Serialize : function(){
 		var cfg = JSON.parse(JSON.stringify(this.config));
@@ -245,6 +252,10 @@ Inherit(Node, EventEmitter, {
 	
 	ToString : function(){
 		return JSON.stringify(this.serialize());
+	},
+	
+	_configError: function(error){
+		
 	}
 });
 
