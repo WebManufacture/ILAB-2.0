@@ -17,7 +17,7 @@ Files = {
 	
 };
 
-Files.MimeTypes = {
+global.MimeTypes = Files.MimeTypes = {
 	htm : "text/html; charset=utf-8",
 	html : "text/html; charset=utf-8",
 	js : "text/javascript; charset=utf-8",
@@ -30,7 +30,7 @@ Files.MimeTypes = {
 	ttf : "font/truetype; charset=utf-8"
 };
 
-FilesRouter = function(cfg){
+global.FilesRouter = function(cfg){
 	if (!cfg.basepath){
 		cfg.basepath = ".";
 	}
@@ -40,7 +40,7 @@ FilesRouter = function(cfg){
 	cfg.basepath = cfg.basepath.replace(/\//g, "\\");
 	this.instanceId = (Math.random() + "").replace("0.", "");
 	this.config = cfg;
-	this.ProcessRequest = function(req, res, url){
+	this.ProcessRequest = function(req, res, url, processCallback){
 		if (!url){
 			url = Url.parse(req.url);
 		}
@@ -50,32 +50,44 @@ FilesRouter = function(cfg){
 			url: url,
 			etag: url.etag,
 			pathTail : url.pathname,
+			setHeader : function(){
+				if (this.finished) return;
+				return res.setHeader.apply(res, arguments);
+			},
+			getHeader : function(){
+				if (this.finished) return;
+				return req.getHeader.apply(req, arguments);
+			},
 			finish: function(header, body, ext){
+				if (this.finished) return;
+				this.finished = true;
 				this.res.statusCode = header;
 				this.res.end(body, ext);
-			},
+			},			
 			"continue" : function(param){
+			},
+			"abort" : function(param){
 			}
 		}
 		if (typeof this[req.method] == "function"){
-			return this[req.method](context);
+			return this[req.method](context, null, null, processCallback);
 		}
 		return null;
 	};
 	var router = this;
-	this.GET = function(context){
-		return router._GET(context);
+	this.GET = function(context, p1, p2, processCallback){
+		return router._GET(context, processCallback);
 	}
-	this.POST = function(context){
+	this.POST = function(context, processCallback){
 		return router._POST(context);
 	}
-	this.PUT = function(context){
+	this.PUT = function(context, processCallback){
 		return router._PUT(context);
 	}
-	this.HEAD = function(context){
+	this.HEAD = function(context, processCallback){
 		return router._HEAD(context);
 	}
-	this.SEARCH = function(context){
+	this.SEARCH = function(context, processCallback){
 		return router._SEARCH(context);
 	}
 };
@@ -89,17 +101,23 @@ FilesRouter.prototype.FormatPath = function(fpath){
 	return fpath.toLowerCase();
 }
 
-FilesRouter.prototype._GET = FilesRouter.prototype._HEAD = function(context){	
+FilesRouter.getExt = function(pathName){	
+	var fpath = this.FormatPath(pathName);
+	var ext = paths.extname(fpath);		
+	return ext.replace(".", "");
+}
+
+FilesRouter.prototype._GET = FilesRouter.prototype._HEAD = function(context, processCallback){	
 	if (context.completed) return true;
 	var fpath = this.FormatPath(context.pathTail);
 	var ext = paths.extname(fpath);		
-	ext = ext.replace(".", "");
-	ext = Files.MimeTypes[ext];
+	var extention = ext = ext.replace(".", "");
+	ext = MimeTypes[ext];
 	if (!ext){
-		context.res.setHeader("Content-Type", "text/plain; charset=utf-8");
+		context.setHeader("Content-Type", "text/plain; charset=utf-8");
 	}
 	else{
-		context.res.setHeader("Content-Type", ext);	    
+		context.setHeader("Content-Type", ext);	    
 	}
 	ext = 'binary';
 	var router = this;
@@ -110,19 +128,26 @@ FilesRouter.prototype._GET = FilesRouter.prototype._HEAD = function(context){
 		}		
 		//var buf = new Buffer(result);
 		if (result.length < 1000000){
-			context.res.setHeader("Content-Length", result.length);
+			context.setHeader("Content-Length", result.length);
 		}	
 		fpath = paths.resolve(fpath);
-		var dnow = new Date();
-		var etag = context.etag;
-		if (!etag){
-			etag = (Math.random() + "").replace("0.", "");
+		if (typeof (processCallback) == "function"){
+			var pobj = {content: result, ext: extention, encoding : ext, mime: context.res.getHeader("Content-Type"), statusCode : 200, req : context.req, res: context.res, context : context, fpath : fpath};
+			try{
+				var fresult = processCallback(pobj);
+				if (!fresult){
+					return;
+				}
+			}
+			catch(err){
+				console.error(err);
+				console.log(processCallback + "");
+				context.finish(500, JSON.stringify(err), ext);
+				context.continue();
+				return;
+			}
 		}
-		context.res.setHeader("Expires", new Date(dnow.valueOf() + 1000 * 3600).toString());
-		context.res.setHeader("Cache-Control", "max-age=3600");
-		context.res.setHeader("ETag", etag);
-		//context.res.write(buf);
-		context.finish(200, result, ext);
+		context.finish(200, result, ext);		
 		context.continue();
 	});	
 	return false;
@@ -136,7 +161,7 @@ FilesRouter.prototype._SEARCH = function(context){
 			context.finish(500, "readdir " + fpath + " error " + err);
 			return;
 		}
-		context.res.setHeader("Content-Type", "application/json; charset=utf-8");
+		context.setHeader("Content-Type", "application/json; charset=utf-8");
 		for (var i = 0; i < files.length; i++){
 			var fname = files[i];			
 			files[i] = fs.statSync(fpath + "\\" + fname);

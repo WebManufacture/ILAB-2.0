@@ -28,6 +28,58 @@ global.mixin = function (Parent, Child) {
 	}
 }
 
+global.EvalInContext = function(code, context, param){
+	var func = function(){
+		return eval(code);
+	}
+	return func.call(context, param);
+}
+
+global.CreateClosure = function(func, thisParam, param1, param2, param3){
+	if (!func) return;
+	if (param1){
+		if (param2){
+			if (param3){
+				return function(){
+					func.call(thisParam, param1, param2, param3);
+				}
+			}
+			return function(){
+				func.apply(thisParam, param1, param2);
+			}
+		}
+		return function(){
+			func.apply(thisParam, param1);
+		}
+	}
+	return function(){
+		return func.apply(thisParam, arguments);
+	}
+}
+
+global.CreateClosureMap = function(func, thisParam, paramNums){
+	if (!func) return;
+	if (paramNums){
+		if (typeof (paramNums) == 'number'){
+			return function(){
+				func.call(thisParam, arguments[paramNums - 1]);
+			}	
+		}
+		if (typeof (paramNums) == 'object' && paramNums.length){
+			return function(){
+				var params = [];
+				for (var i = 0; i < paramNums.length; i++){
+					params.push(arguments[paramNums[i]]);
+				}
+				func.apply(thisParam, params);
+			}
+		}
+	}
+	return function(){
+		func.apply(thisParam, arguments);
+	}
+}
+
 Date.prototype.formatTime = function(withMilliseconds){
 	if (withMilliseconds){
 		return this.getHours() + ":" + this.getMinutes() + ":" + this.getSeconds() + "." + this.getMilliseconds();	

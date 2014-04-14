@@ -25,10 +25,15 @@ Inherit(InternalNode, ManagedNode, {
 	load : function(callback){
 		var result = true;
 		if (InternalNode.base.load){
-			var result = InternalNode.base.load.call(this, callback);
+			result = InternalNode.base.load.call(this, callback);
+		}
+		this.module = this.file = this.config.File;
+		this.frame = this.config.frame;
+		if (this.frame){
+			this.module = this.frame;
 		}
 		try{
-			this.module = require(Path.resolve(this.config.File));	
+			this.module = require(Path.resolve(this.module));	
 			if (this.module){
 				if (typeof(this.module) == "function"){
 					this.module = this.module(this, this.config);
@@ -44,7 +49,7 @@ Inherit(InternalNode, ManagedNode, {
 			}
 		}
 		catch (e){
-			//error(e);
+			this.logger.error(e);
 			return 'error';
 		}		
 		/*

@@ -20,20 +20,26 @@ global.Async = {
 
 	Waterfall : function(callback){
 		this.counter = 0;
-		this._doneMethod = callback;
+		if (callback){
+			this.once("done", callback);
+		}
+	},
+	
+	EventFall : function(callback){
+		this.counter = 0;
+		if (callback){
+			this.once("done", callback);
+		}
 	},
 
 
-	Collector : function(immediatly){
+	Collector : function(immediatly,ondone){
 		var count = 0;
-		if (typeof (count) == 'boolean'){
-			this.immediatly = count;
-			if (typeof (immediatly) == 'number') count = immediatly;
+		if (typeof (immediatly) == 'boolean'){
+			this.immediatly = immediatly;
 		}
-		else{
-			if (typeof (immediatly) == 'boolean'){
-				this.immediatly = immediatly;
-			}
+		if (ondone){
+			this.once("done", ondone);
 		}
 		this.methods = [];
 		if (count > 0){
@@ -126,11 +132,30 @@ Inherit(Async.Collector, EventEmitter, {
 		if (this.immediatly) setImmediate(func); 
 		return func;
 	},
+	
+	addClosureCallback : function(callback, thisParam, args){
+		if (typeof (thisParam) == 'function')  {
+			callback = thisParam;
+			thisParam = this;
+		}
+		if (!thisParam) thisParam = this;
+		var cb = this.getResultCallback();
+		if (!args) args = [];
+		args.push(cb);
+		var func = function(){
+			callback.apply(thisParam, args);
+		};		
+		this.methods.push(func);
+		if (this.immediatly) setImmediate(func); 
+		return func;
+	},
 
 	run : function(callback){
-		for (var i = 0; i < this.methods.length; i++){
-			setImmediate(this.methods[i]); 
-		}
+		if (!this.immediatly) {
+			for (var i = 0; i < this.methods.length; i++){
+				setImmediate(this.methods[i]); 
+			}
+		};
 		this.emit('start');
 	},
 
@@ -168,7 +193,27 @@ Inherit(Async.Waterfall, EventEmitter, {
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
-				self._callDone();
+				self.emit('done');
+			});
+		}
+	},
+
+	getCallback : function(){
+		var self = this;
+		this.counter++;
+		return function checkEventsDone(){
+			self.checkFunction();
+		};
+	},
+});
+
+Inherit(Async.EventFall, EventEmitter, {
+	checkFunction : function(){
+		this.counter--;
+		var self = this;
+		if (this.counter == 0){
+			setImmediate(function(){
+				self.emit('done');
 			});
 		}
 	},
@@ -179,12 +224,6 @@ Inherit(Async.Waterfall, EventEmitter, {
 		emitter.once(event, function checkEventsDone(){
 			self.checkFunction();
 		})
-	},
-
-	_callDone : function(){
-		if (typeof this.onDone == 'function'){
-			this.onDone();
-		}
 	}
 });
 

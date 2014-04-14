@@ -1,35 +1,37 @@
 {
 	"Ver" : "0.3.2", 
 	"Modules" : [
-		
+		"ILAB/Modules/ilab_nodes_connectivity.js"
 	],
 	"Nodes" : {
 		"Routing" : {
+			"Type" : "internal",
+			"File":"./ilab/modules/Routing.js",
 			"Path" : "" ,
 			"Routes" : {
 				"http://default/Config/>": "admin/config",
-				"http://klab.web-manufacture.net" : "int://KLab", 
-				"http://ilab.web-manufacture.net" : "int://ILab",
-				"http://services.web-manufacture.net" : "int://Sites/Services",
-				"http://modules.web-manufacture.net" : "int://Sites/Modules",
-				"http://ststem.web-manufacture.net" : "int://Sites/System",
-				"http://web-manufacture.net" : "int://Sites/WebManufactureSite",
+				"http://klab.web-manufacture.net/>" : "klab", 
+				"http://ilab.web-manufacture.net/>" : "iLab",
+				"http://services.web-manufacture.net/>" : "Sites/Services",
+				"http://modules.web-manufacture.net/>" : "Sites/Modules",
+				"http://system.web-manufacture.net/>" : "Sites/System",
+				"http://web-manufacture.net/>" : "Sites/WebManufactureSite",
 
-				"http://roboplatform.web-manufacture.net/Store/>" : "int://RoboPlatform/Store",
-				"http://roboplatform.web-manufacture.net/Robomind/>" : "int://RoboPlatform/Sites/RoboMind",	
-				"http://roboplatform.web-manufacture.net:5000/robomind/>" : "int://RoboPlatform/Services/RoboMind",
+				"http://roboplatform.web-manufacture.net/Store/>" : "iRoboPlatform/Store",
+				"http://roboplatform.web-manufacture.net/Robomind/>" : "RoboPlatform/Sites/RoboMind",	
+				"http://roboplatform.web-manufacture.net:5000/robomind/>" : "RoboPlatform/Services/RoboMind",
 
-				"http://identification.web-manufacture.net/>" : "int://Identification/Site",
-				"http://identification.web-manufacture.net/Identification/>" : "int://Identification/Service",
+				"http://identification.web-manufacture.net/Identification/>" : "Identification/Service",
+				"http://identification.web-manufacture.net/<" : "Identification/Site",
 
-				"http://cnc.web-manufacture.net/>" : "int://CncPlatform/Sites/Main",
-				"http://cnc.web-manufacture.net:6670/>" : "int://CncPlatform/Services/CncTable",
+				"http://cnc.web-manufacture.net/>" : "CncPlatform/Sites/Main",
+				"http://cnc.web-manufacture.net:6670/>" : "CncPlatform/Services/CncTable",
 
-				"http://roboplatform.web-manufacture.net/Emulator/>" : "int://TcpEmulator/ViewState",
-				"sock://roboplatform.web-manufacture.net/Emulator/>" : "int://TcpEmulator/SockService",
-				"tcp://localhost:6600" : "int://TcpEmulator/TcpService",
-				"channels://uart.output" : "int://TcpEmulator/UartSender",
-				"channels://uart.input" : "int://TcpEmulator/UartSender"
+				"http://roboplatform.web-manufacture.net/Emulator/>" : "TcpEmulator/ViewState",
+				"sock://roboplatform.web-manufacture.net/Emulator/>" : "TcpEmulator/SockService",
+				"tcp://localhost:6600" : "TcpEmulator/TcpService",
+				"channels://uart.output" : "TcpEmulator/UartSender",
+				"channels://uart.input" : "TcpEmulator/UartSender"
 			}
 		},
 		"Test" : {

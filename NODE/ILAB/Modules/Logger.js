@@ -1,6 +1,5 @@
 function Logger(ChannelPrefix, useConsole){
 	this.channelPrefix = ChannelPrefix;
-	if (!this.channelPrefix) this.channelPrefix = "";
 	this.useConsole = useConsole;
 }
 
@@ -116,7 +115,11 @@ Logger.prototype = {
 		}
 		if (global.Channels) {
 			value = { content: value, datetime: new Date(), type: type };
-			Channels.emit(this.channelPrefix + "/log." + type, value)
+			var cpostfix = "";
+			if (this.channelPrefix){
+				cpostfix = ("/" + this.channelPrefix);
+			}
+			Channels.emit("/log." + type + cpostfix, value)
 		}
 	}
 }
