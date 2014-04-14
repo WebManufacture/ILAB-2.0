@@ -3,18 +3,6 @@ useNodeType("node.js");
 function ManagedNode (parentNode, item){
 	ManagedNode.super_.apply(this, arguments);
 	this.type = ManagedNode.Type;
-	var self = this;
-	if (!parentNode){
-		this.on('initialized', function(){
-			if (self.defaultState == Node.States.WORKING || self.defaultState == Node.States.SLEEP){
-				self.Start(function(){
-					if (self.defaultState == Node.States.SLEEP){
-						self.Sleep();
-					}
-				});
-			}		
-		});
-	};
 };
 
 global.ManagedNode = ManagedNode;
@@ -26,19 +14,30 @@ global.Node.Inherit(ManagedNode, {
 		if (ManagedNode.base.init){
 			ManagedNode.base.init.call(this, config);
 		}
-		this.defaultState = Node.StatusToInt(config.State);
+		this.defaultState = Node.StatusToInt(config.defaultState);		
 		return true;
 	},
 
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
+		var self = this;
+		if (self.defaultState == Node.States.WORKING || self.defaultState == Node.States.SLEEP){
+			setImmediate(function(){
+				self.Start(function(){
+					if (self.defaultState == Node.States.SLEEP){
+						self.Sleep();
+					}
+				});
+			});
+		};		
 		if (ManagedNode.base.load){
 			return ManagedNode.base.load.call(this, callback);
 		}
-		else{
-			return true;
+		if (callback){
+			callback();
 		}
+		return true;
 	}
 });
 

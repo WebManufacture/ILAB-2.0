@@ -10,7 +10,6 @@ function Node(parentNode, item){
 	if (item){
 		if (!item.id) item.id = "anonimous";
 		this.id = (item.id + "").toLowerCase();
-		this.logger = new Logger(this.id, false);
 		var self = this;
 		setImmediate(function(){
 			self.Init(item)
@@ -60,7 +59,8 @@ Inherit(Node, EventEmitter, {
 		if (!this.id){
 			if (!config.id) config.id = "anonimous";
 			this.id = (config.id + "").toLowerCase();
-		}
+		}		
+		this.logger = new Logger(this.id, true);
 		this.config = config;	
 		return true;
 	},
@@ -86,12 +86,16 @@ Inherit(Node, EventEmitter, {
 					callback.apply(self, arguments)
 				}
 			}
+			function loadFailFunc(){
+				self.State = Node.States.INITIALIZED;
+				self.logger.error("Load failed by timeout " + self.id);
+			}
 			if (typeof this.load == 'function')	{
 				result = this.load(asyncLoadFunc);
 			}
 			else{
 				result = true;
-			}
+			}			
 			if (result == 'error') {
 				self.State = Node.States.INITIALIZED;
 				if (typeof callback == 'function'){
@@ -100,9 +104,10 @@ Inherit(Node, EventEmitter, {
 			}
 			else{
 				if (result) {
-					setImmediate(function(){
-						asyncLoadFunc();
-					});
+					setImmediate(asyncLoadFunc);
+				}
+				else{
+					setTimeout(loadFailFunc, 5000);
 				}
 			}
 		}
@@ -127,9 +132,7 @@ Inherit(Node, EventEmitter, {
 				result = true;
 			}
 			if (result) {
-				setImmediate(function(){
-					asyncUnloadFunc();
-				});
+				setImmediate(asyncUnloadFunc);
 			}
 		}
 		return result;

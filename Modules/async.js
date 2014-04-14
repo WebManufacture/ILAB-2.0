@@ -205,6 +205,15 @@ Inherit(Async.Waterfall, EventEmitter, {
 			self.checkFunction();
 		};
 	},
+	
+	check : function(emitter, event){
+		var self = this;
+		if (this.counter == 0){
+			setImmediate(function(){
+				self.emit('done');
+			});
+		}
+	}
 });
 
 Inherit(Async.EventFall, EventEmitter, {
@@ -224,6 +233,15 @@ Inherit(Async.EventFall, EventEmitter, {
 		emitter.once(event, function checkEventsDone(){
 			self.checkFunction();
 		})
+	},
+	
+	check : function(emitter, event){
+		var self = this;
+		if (this.counter == 0){
+			setImmediate(function(){
+				self.emit('done');
+			});
+		}
 	}
 });
 
