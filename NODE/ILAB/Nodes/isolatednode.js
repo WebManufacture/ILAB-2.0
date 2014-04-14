@@ -1,6 +1,6 @@
 useNodeType("node.js");
 useNodeType("managednode.js");
-useModule("logger.js");
+var Logger = useModule("logger.js");
 var Path = require('path');
 
 function IsolatedNode (parentNode, item){
@@ -17,10 +17,12 @@ Inherit(IsolatedNode, ManagedNode, {
 		if (IsolatedNode.base.init){
 			IsolatedNode.base.init.call(this, config);
 		}
+		console.log(config);
+		if (!config.file) config.file = config.File;
 		this.path = Path.resolve(config.file);
 		this.args = config;
 		this.code = 0;
-		this.logger = logModule.create(id + "/log");
+		this.logger = new Logger(this.id + "/log");
 		this.subscribers = {};
 		var fork = this;
 		if (global.Channels){
