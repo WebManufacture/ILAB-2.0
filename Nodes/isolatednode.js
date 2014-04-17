@@ -85,12 +85,12 @@ Inherit(IsolatedNode, ManagedNode, {
 				cp.on("exit", function(){
 					if (fork.State != Node.States.EXCEPTION) fork.State = Node.States.Stopped;
 					fork.logger.debug("%bright;%yellow;fork exited %normal;");
-				});
-				cp.once("message", function(){
-					callback();		
-				});
+				});			
 				cp.on("message", function(message){
 					fork._messageEvent.apply(fork, arguments);
+					if (message.type == "process.state" && message.args[0] == Node.States.LOADED && callback){
+						callback();
+					}
 				});		
 				fork.logger.debug("%bright;%blue;fork starting");
 			}
@@ -121,7 +121,7 @@ Inherit(IsolatedNode, ManagedNode, {
 				}
 				callback();
 			}, 5000);
-			proc.on("exit", function(){
+			proc.once("exit", function(){
 				exited = true;
 				clearTimeout(exitTimeout);
 				callback();

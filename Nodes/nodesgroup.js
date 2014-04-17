@@ -102,13 +102,8 @@ Inherit(NodeGroup, ManagedNode, {
 		try{
 			var self = this;
 			
-			var lf = new Async.Waterfall(function loadComplete(){
-				if (NodeGroup.base.load){
-					NodeGroup.base.load.call(self, callback);
-				}						
-				else{
-					callback();
-				}
+			var lf = new Async.Waterfall(function loadComplete(){						
+				callback();
 			});
 			
 			for (var id in self.Nodes){
@@ -127,11 +122,9 @@ Inherit(NodeGroup, ManagedNode, {
 	},
 
 	unload : function(callback){
-		this.logger.debug("%red;Unloading frame service;");
 		var self = this;
 		var wf = new Async.EventFall(function unloadComplete(){
 			delete self.Nodes;
-			self.logger.debug("%red;Group unloaded");
 			if (callback) callback();
 			else self.State = Node.States.UNLOADED;
 		});
@@ -152,7 +145,8 @@ Inherit(NodeGroup, ManagedNode, {
 	start : function(callback){
 		for (var id in this.Nodes){
 			var node = this.Nodes[id];
-			if (node.defaultState >= Node.States.WORKING || node.defaultState < Node.States.UNLOADING){
+			console.log(id + " " + node.defaultState);
+			if (!node.defaultState || node.defaultState >= Node.States.WORKING || node.defaultState < Node.States.UNLOADING){
 				node.Start(function(){
 					if (this.defaultState == Node.States.SLEEP){
 						this.sleep();
@@ -160,12 +154,7 @@ Inherit(NodeGroup, ManagedNode, {
 				});
 			}
 		}
-		if (NodeGroup.base.start){
-			return NodeGroup.base.start.call(this, callback);
-		}
-		else{
-			return true;
-		}
+		return true;
 	},
 
 	stop : function(callback){

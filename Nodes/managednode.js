@@ -39,9 +39,6 @@ global.Node.Inherit(ManagedNode, {
 		if (ManagedNode.base.load){
 			return ManagedNode.base.load.call(this, callback);
 		}
-		if (callback){
-			callback();
-		}
 		return true;
 	}
 });

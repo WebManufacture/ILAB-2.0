@@ -182,7 +182,16 @@ try{
 
 		node.on("state", function(state){
 			Channels.emitToGlobal("process.state", arguments);
+			//Channels.emitToGlobal("process." + Node.Statuses[state], arguments);
 		});
+		
+		node.on("unloading", function(){
+			logger.debug("%red;Unloading " + this.id + "  frame service;");
+		});		
+		
+		node.on("unloaded", function(){
+			logger.debug("%red;Frame " + this.id + " unloaded");
+		});	
 	}
 	
 	node.on("state", function(state){
@@ -195,6 +204,12 @@ try{
 		}
 		node.once("initialized", function(){
 			node.Load(function loaded(){
+				if (node.State > Node.States.INITIALIZED && node.State < Node.States.UNLOADING){
+					node.Start();
+				}
+				setTimeout(function(){
+					node.Unload();
+				}, 3000);
 				global.pinterval = setInterval(function(){
 					if (node.State > Node.States.INITIALIZED && node.State < Node.States.UNLOADING)	node.Ping();
 				}, 1000);
