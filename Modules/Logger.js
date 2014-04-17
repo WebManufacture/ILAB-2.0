@@ -46,6 +46,55 @@ global.log = Logger.log = function(value, type) {
 
 global.useConsole = true;
 
+consoleColors = {
+	normal : "\u001b[0m\u001b[40m\u001b[37m",
+	warn : "\u001b[33m",
+	debug : "\u001b[1m\u001b[30m",	
+	error : "\u001b[1m\u001b[31m", //Red
+	info : "\u001b[37m", //Gray
+	success: "",
+	grey	:	 "\u001b[1m\u001b[30m",
+	black	:	 "\u001b[30m",
+	red		:    "\u001b[31m",
+	green	:	 "\u001b[0m\u001b[32m",
+	bright	:	 "\u001b[1m",
+	yellow	:    "\u001b[0m\u001b[33m",
+	blue	:	 "\u001b[34m",
+	violet	:	 "\u001b[35m",
+	marine	:	 "\u001b[36m", 
+	white	:	 "\u001b[37m",
+}
+
+/*
+ " \u001b[30m" - black
+ " \u001b[31" -  red
+ " \u001b[32" -  green
+ " \u001b[33m" - yellow
+ " \u001b[34m" - blue
+ " \u001b[35m" - violet
+ " \u001b[36m" - marine
+ " \u001b[37m" - white
+ 
+  "\u001b[1m" - add Bright
+  
+  Background - 
+  
+ " \u001b[40m" - black
+ " \u001b[41" -  red
+ " \u001b[42" -  green
+ " \u001b[43m" - yellow
+ " \u001b[44m" - blue
+ " \u001b[45m" - violet
+ " \u001b[46m" - marine
+ " \u001b[47m" - white 
+ */
+ 
+Logger.parseFormatedString = function(text){
+	return text.replace(/%(\w+);/ig, function(value, g1){
+		return consoleColors[g1] !== undefined ? consoleColors[g1] : value;
+	});
+}
+
 Logger.prototype = {
 	info: function(text) {
 		this._localLog(Logger._parseArguments(arguments), "info");
@@ -61,7 +110,7 @@ Logger.prototype = {
 	},
 
 	warn: function(text) {
-		this._localLog(Logger._parseArguments(arguments), "debug");
+		this._localLog(Logger._parseArguments(arguments), "warn");
 	},
 
 	debug: function(text) {
@@ -73,45 +122,15 @@ Logger.prototype = {
 			type = "?";
 		}
 		if (this.useConsole || !global.Channels){
+			var c = consoleColors[type];
 			if (typeof value == 'string'){
-				var content = '';
-				var color = '';
-				var text = value + "";
-				var mode = 0;
-				for (var i = 0; i < text.length; i++){
-					if (mode == 0){
-						if (text[i] == ">"){
-							content += " \u001b" + "[39m";
-							continue;
-						}
-						if (text[i] == "<"){
-							mode = 1;
-							color = '';
-							continue;
-						}
-						content += text[i];
-						continue;
-					}
-					if (mode == 1){
-						if (text[i] == ">" || text[i] == ":"){
-							switch(color){
-								case 'red' : color = 31; break;
-								default:
-									color = 1;
-							}
-							content += "\u001b" + "[" + color + "m";
-							mode = 0;
-							continue;
-						}
-						color += text[i];
-						continue;
-					}
-				}
-				console.log(content);
+				value = Logger.parseFormatedString(value);
+				if (c) value = c + value; 
+				else value = consoleColors.normal + value; 
+				if (this.channelPrefix) value = consoleColors.bright + consoleColors.white + this.channelPrefix + "> " + consoleColors.normal + value ;
+				value += consoleColors.normal;
 			}
-			else{
-				console.log(value);
-			}
+			console.log(value);
 		}
 		if (global.Channels) {
 			value = { content: value, datetime: new Date(), type: type };
