@@ -15,7 +15,7 @@ global.InternalNode.Type = "internal";
 Inherit(InternalNode, ManagedNode, {
 	init : function(config){
 		if (InternalNode.base.init){
-			InternalNode.base.init.call(this, config);
+			return InternalNode.base.init.call(this, config);
 		}
 		return true;
 	},

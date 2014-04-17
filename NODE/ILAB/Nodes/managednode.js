@@ -11,10 +11,15 @@ global.ManagedNode.Type = "managed";
 
 global.Node.Inherit(ManagedNode, {
 	init : function(config){
-		if (ManagedNode.base.init){
-			ManagedNode.base.init.call(this, config);
+		if (config.State !== undefined){
+			this.defaultState = Node.StatusToInt(config.State);		
 		}
-		this.defaultState = Node.StatusToInt(config.defaultState);		
+		else{
+			//this.defaultState = Node.States.LOADED;
+		}
+		if (ManagedNode.base.init){
+			return ManagedNode.base.init.call(this, config);
+		}
 		return true;
 	},
 

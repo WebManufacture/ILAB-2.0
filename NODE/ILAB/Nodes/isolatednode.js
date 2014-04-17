@@ -1,7 +1,9 @@
 useNodeType("node.js");
 useNodeType("managednode.js");
 var Logger = useModule("logger.js");
+var ChildProcess = require("child_process");
 var Path = require('path');
+var fs = require('fs');
 
 function IsolatedNode (parentNode, item){
 	IsolatedNode.super_.apply(this, arguments);
@@ -17,12 +19,9 @@ Inherit(IsolatedNode, ManagedNode, {
 		if (IsolatedNode.base.init){
 			IsolatedNode.base.init.call(this, config);
 		}
-		console.log(config);
 		if (!config.file) config.file = config.File;
 		this.path = Path.resolve(config.file);
-		this.args = config;
-		this.code = 0;
-		this.logger = new Logger(this.id + "/log");
+		this.logger = new Logger(this.id, true);
 		this.subscribers = {};
 		var fork = this;
 		if (global.Channels){
@@ -60,33 +59,52 @@ Inherit(IsolatedNode, ManagedNode, {
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
-		var args = this.args;
-		var cwd =  process.cwd();
-		if (!args.cwd){
-			cwd = args.cwd;
+		var config = this.config;
+		var childConfig = JSON.parse(JSON.stringify(config));
+		var cwd = process.cwd();
+		if (!config.cwd){
+			cwd = config.cwd;
 		}
-		var wd =  paths.dirname(this.path);
-		if (!args.wd){
-			wd = args.wd;
+		var wd = Path.dirname(this.path);
+		if (!config.wd){
+			wd = config.wd;
 		}
-		var argsA = [JSON.stringify(args)];
-		argsA.push(JSON.stringify(this.subscribers));
-		var cp = this.process = ChildProcess.fork(this.path, argsA, { silent: false, cwd: cwd, env : { workDir: wd, isChild : true } });
-		this.logger.debug("fork started " + this.path);
-		if (callback){
-			var fork = this;
-			fork._once("/state", function(){
-				callback.call();
-			});
-		}
-		this._emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
+		childConfig.Type = "internal";
+		childConfig.State = Node.Statuses[Node.States.LOADED];
+		var argsA = [JSON.stringify(childConfig), JSON.stringify(this.subscribers)];
 		var fork = this;
-		cp.on("exit", function(){
-			fork._exitEvent.apply(fork, arguments);
-		});
-		cp.on("message", function(){
-			fork._messageEvent.apply(fork, arguments);
-		});		
+		try{
+			if (fs.existsSync(fork.path)){
+				var options = { workDir: wd, isChild : true, cwd: cwd, parentNode : fork.id };
+				var cp = fork.process = ChildProcess.fork(fork.path, argsA, { silent: config.useConsole == false, cwd: cwd, env : options });
+				cp.on("error", function(err){
+					fork.State = Node.States.EXCEPTION;
+					fork.logger.debug("%bright;%yellow;fork error %normal;");
+					fork.logger.error(err);
+				});
+				cp.on("exit", function(){
+					if (fork.State != Node.States.EXCEPTION) fork.State = Node.States.Stopped;
+					fork.logger.debug("%bright;%yellow;fork exited %normal;");
+				});
+				cp.once("message", function(){
+					callback();		
+				});
+				cp.on("message", function(message){
+					fork._messageEvent.apply(fork, arguments);
+				});		
+				fork.logger.debug("%bright;%blue;fork starting");
+			}
+			else{
+				callback();
+				this.State = Node.States.EXCEPTION;
+				this.logger.error("Path " + fork.path + " does not exists");
+			}
+		}
+		catch (err){
+			callback();
+			this.State = Node.States.EXCEPTION;
+			this.logger.error(err);
+		}
 		return false;
 	},
 	
@@ -139,12 +157,6 @@ Inherit(IsolatedNode, ManagedNode, {
 		return stat;
 	},
 	
-	_exitEvent : function(signal){
-		this._emit("/state." + Fork.Statuses[this.code], Fork.Statuses[this.code]);
-		this._emit(".exit", signal);
-		this.logger.debug("fork exited " + this.path);
-	},
-	
 	_messageEvent : function(obj){
 		if (global.Channels && typeof obj == "object"){
 			/*if (obj.type == "channelControl"){
@@ -153,11 +165,18 @@ Inherit(IsolatedNode, ManagedNode, {
 					fork.emitToChild.apply(fork, arguments);
 				});
 			}*/
+			
+			if (obj.type == "process.state"){
+				//this.State = obj.args[0];
+				this.logger.debug("%bright;%blue;fork %normal;{0} => {1} ", Node.Statuses[obj.args[1]], Node.Statuses[obj.args[0]]);
+				return;
+			}
 			if (obj.type == "channelMessage"){
 				obj.args[0] = "/process.internal" + obj.args[0] + "";
 				//console.log("<< " + (new Date()).formatTime(true));
 				this.emit.apply(this, obj.args);
 			}
+			this.logger.debug("%bright;%blue;fork message %normal; {0} : {1} ", obj.type, obj.args[0]);
 		}
 		if (typeof obj == "string"){
 			this.logger.log(obj);

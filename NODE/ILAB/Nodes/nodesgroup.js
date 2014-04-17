@@ -27,11 +27,17 @@ global.NodeGroup.Type = "nodesgroup";
 
 Inherit(NodeGroup, ManagedNode, {
 	init : function(cfg){
+		if (!this.id && !cfg.id){
+			this.id = "nodes-group" + parseInt(Math.random()*1000);
+		}
+		
+		if (NodeGroup.base.init){
+			NodeGroup.base.init.call(this, cfg);
+		}
+		
 		try{
-			if (NodeGroup.base.init){
-				NodeGroup.base.init.call(this, cfg);
-			}
-
+			
+			
 			this.Config = cfg;
 			this.Nodes = {};
 			this.Modules = [];
@@ -40,30 +46,47 @@ Inherit(NodeGroup, ManagedNode, {
 
 			if (!cfg.Nodes) cfg.Nodes = {};
 
-			var nodes = this.config.Nodes;
+			var citems = this.config.Nodes;
+			var nodes = {};
 			
-			for (var nodeId in nodes){
-				var item = nodes[nodeId];
+			for (var nodeId in citems){
+				var item = citems[nodeId];
 				item.id = nodeId;
 				if (!item.Type) item.Type = 'base';
 				var nType = NodesByTypes[item.Type];
 				if (nType){
-					var node = new nType(self, item);
-					this.Nodes[node.id] = node;
+					var node = new nType(self);
+					nodes[nodeId] = node;
 					node.on('state', function(state, stateOld){
-						self.logger.debug("<#058:{0}:{1}> {2} => {3}", this.type, this.id, Node.Statuses[stateOld],Node.Statuses[state]);
+						if (this.logger){
+							this.logger.debug("{0} => {1}", Node.Statuses[stateOld],Node.Statuses[state]);
+						}
+						else{
+							self.logger.debug("{0}:%bright;%white;{1} %normal;{2} => {3}", this.type, this.id, Node.Statuses[stateOld],Node.Statuses[state]);
+						}
 					});
 					if (item.State == "working"){
-						this.logger.debug("<green:{0}:{1}> {2}", item.Type, item.id, item.File);
+						this.logger.debug("%green;{0}:%normal;{1} {2}", item.Type, item.id, item.File);
 					}
 					else
 					{
-						this.logger.debug("<#A90:{0}:{1}> {2}", item.Type, item.id, item.File);	
+						this.logger.debug("%yellow;{0}:%normal;{1} {2}", item.Type, item.id, item.File);	
 					}
 				}
 				else{
 					this.logger.warn("Unknown node type: " + item.Type);
 				}
+			}
+			
+			for (var nodeId in nodes){			
+				var node = nodes[nodeId];
+				var item = citems[nodeId];			
+				node.originalId = nodeId;
+				node.Init(item);		
+				if (node.defaultState === undefined){
+					node.defaultState = Node.States.LOADED;
+				};
+				this.Nodes[node.id] = node;				
 			}
 			
 			return true;
@@ -79,20 +102,23 @@ Inherit(NodeGroup, ManagedNode, {
 		try{
 			var self = this;
 			
+			var lf = new Async.Waterfall(function loadComplete(){
+				if (NodeGroup.base.load){
+					NodeGroup.base.load.call(self, callback);
+				}						
+				else{
+					callback();
+				}
+			});
+			
 			for (var id in self.Nodes){
 				var node = self.Nodes[id];
-				if (node.defaultState >= Node.States.LOADED || node.defaultState < Node.States.UNLOADING){
-					console.log("Loading");
-					node.Load();
+				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING){
+					node.Load(lf.getCallback());
 				}
 			}
 
-			if (NodeGroup.base.load){
-				NodeGroup.base.load.call(self, callback);
-			}						
-			else{
-				callback();
-			}
+			lf.check();
 		}
 		catch(err){
 			this.logger.error(err);
@@ -101,11 +127,11 @@ Inherit(NodeGroup, ManagedNode, {
 	},
 
 	unload : function(callback){
-		this.logger.debug("<red:Unloading frame service>");
+		this.logger.debug("%red;Unloading frame service;");
 		var self = this;
 		var wf = new Async.EventFall(function unloadComplete(){
 			delete self.Nodes;
-			self.logger.debug("<red:Frame service unloaded>");
+			self.logger.debug("%red;Group unloaded");
 			if (callback) callback();
 			else self.State = Node.States.UNLOADED;
 		});

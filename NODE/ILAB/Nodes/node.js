@@ -19,11 +19,11 @@ function Node(parentNode, item){
 
 global.Node = Node;
 
-global.Node.Statuses = ["null", "error", "initialized", "loading", "loaded", "starting", "working", "sleep", "stopping", "stopped", "unloading", "unloaded"];
+global.Node.Statuses = ["null", "exception", "initialized", "loading", "loaded", "starting", "working", "sleep", "stopping", "stopped", "unloading", "unloaded"];
 
 global.Node.States = {
 	NULL : 0, 
-	ERROR : 1,
+	EXCEPTION : 1,
 	INITIALIZED : 2, 
 	LOADING : 3,
 	LOADED : 4, 
@@ -82,13 +82,18 @@ Inherit(Node, EventEmitter, {
 			var result = null;
 			function asyncLoadFunc(value){
 				self.State = Node.States.LOADED;
+				if (self.loadTimeout){
+					clearTimeout(self.loadTimeout);
+				}
 				if (typeof callback == 'function'){
 					callback.apply(self, arguments)
 				}
 			}
 			function loadFailFunc(){
-				self.State = Node.States.INITIALIZED;
-				self.logger.error("Load failed by timeout " + self.id);
+				if (this._state < Node.States.LOADED){
+					self.State = Node.States.INITIALIZED;
+					self.logger.error("Load failed by timeout " + self.id);
+				}
 			}
 			if (typeof this.load == 'function')	{
 				result = this.load(asyncLoadFunc);
@@ -107,16 +112,19 @@ Inherit(Node, EventEmitter, {
 					setImmediate(asyncLoadFunc);
 				}
 				else{
-					setTimeout(loadFailFunc, 5000);
+					self.loadTimeout = setTimeout(loadFailFunc, 5000);
 				}
 			}
+		}		
+		else{
+			console.log("Node " + this.id + " in "  + this.Status + " try to LOAD");
 		}
 		return result;
 	},
 	
 	Unload : function(callback){
 		var self = this;
-		if (this._state >= Node.States.LOADED || this._state < Node.States.UNLOADING){
+		if (this._state >= Node.States.LOADED && this._state < Node.States.UNLOADING){
 			this.State = Node.States.UNLOADING;
 			var result = null;
 			var asyncUnloadFunc = function(){
@@ -134,6 +142,9 @@ Inherit(Node, EventEmitter, {
 			if (result) {
 				setImmediate(asyncUnloadFunc);
 			}
+		}		
+		else{
+			console.log("Node " + this.id + " in "  + this.Status + " try to UNLOAD ");
 		}
 		return result;
 	},
@@ -188,6 +199,9 @@ Inherit(Node, EventEmitter, {
 				self.State = Node.States.WORKING;				
 			}
 		}
+		else{
+			console.log("Node " + this.id + " in "  + this.Status + " try to Start ");
+		}
 		return result;
 	},	
 			
@@ -202,6 +216,9 @@ Inherit(Node, EventEmitter, {
 				this.State = Node.States.SLEEP;			
 			}
 		}
+		else{
+			console.log("Node " + this.id + " in "  + this.Status + " try to Sleep ");
+		}		
 		return result;
 	},
 	
@@ -230,7 +247,10 @@ Inherit(Node, EventEmitter, {
 				result = true;
 				self.State = Node.States.STOPPED;
 			}
-		}		
+		}	
+		else{
+			console.log("Node " + this.id + " in "  + this.Status + " try to Stop ");
+		}	
 		return result;
 	},
 	
@@ -243,6 +263,9 @@ Inherit(Node, EventEmitter, {
 	Ping : function(callback){
 		if (this._state == Node.States.WORKING)	{
 			if (typeof this.ping == 'function') return this.ping.apply(this.arguments);
+		}		
+		if (this._state < Node.States.LOADED || this._state >= Node.States.UNLOADING){
+			console.log("Node " + this.id + " in "  + this.Status + " ping!");
 		}
 	},
 		
@@ -263,7 +286,7 @@ Inherit(Node, EventEmitter, {
 });
 
 Object.defineProperty(Node.prototype, "Status",{
-	get :   function(){
+	get :  function(){
 		return Node.Statuses[this._state];
 	},
 });
@@ -276,7 +299,9 @@ Object.defineProperty(Node.prototype, "State",{
 		var os = this._state;
 		this._state = value;
 		this.emit('state', value, os);
-		this.emit(this.Status, os);
+		if (this.Status){
+			this.emit(this.Status, os);
+		}
 	}
 });
 	
