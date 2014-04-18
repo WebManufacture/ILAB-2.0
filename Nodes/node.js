@@ -65,7 +65,13 @@ Inherit(Node, EventEmitter, {
 		return true;
 	},
 	
-	Init : function(item){
+	Init : function(item, callback){
+		var self = this;
+		if (typeof callback == 'function'){
+			this.once("initialized",function(){
+				callback.apply(self, arguments);
+			});
+		}
 		if (typeof this.init == 'function')
 		{
 			if (this.init(item)) this.State = Node.States.INITIALIZED;
@@ -78,129 +84,71 @@ Inherit(Node, EventEmitter, {
 	Load : function(callback){
 		var self = this;
 		if (this._state == Node.States.INITIALIZED || this._state == Node.States.UNLOADED){
-			this.State = Node.States.LOADING;
-			var result = null;
-			function asyncLoadFunc(value){
-				self.State = Node.States.LOADED;
-				if (self.loadTimeout){
-					clearTimeout(self.loadTimeout);
-				}
-				if (typeof callback == 'function'){
-					callback.apply(self, arguments)
-				}
-			}
-			function loadFailFunc(){
-				if (this._state < Node.States.LOADED){
-					self.State = Node.States.INITIALIZED;
-					self.logger.error("Load failed by timeout " + self.id);
-				}
-			}
-			if (typeof this.load == 'function')	{
-				result = this.load(asyncLoadFunc);
-			}
-			else{
-				result = true;
-			}			
-			if (result == 'error') {
-				self.State = Node.States.INITIALIZED;
-				if (typeof callback == 'function'){
+			if (typeof callback == 'function'){
+				this.once("loaded",function(){
 					callback.apply(self, arguments);
-				}
+				});
 			}
-			else{
-				if (result) {
-					setImmediate(asyncLoadFunc);
-				}
-				else{
-					self.loadTimeout = setTimeout(loadFailFunc, 5000);
-				}
+			this.State = Node.States.LOADING;
+			var result = true;
+			if (typeof this.load == 'function')	{
+				result = this.load();
+			}
+			if (result) {
+				self.State = Node.States.LOADED;
 			}
 		}		
 		else{
-			console.log("Node " + this.id + " in "  + this.Status + " try to LOAD");
+			this.logger.warn("Node " + this.id + " in "  + this.Status + " try to LOAD");
 		}
 		return result;
 	},
 	
 	Unload : function(callback){
 		var self = this;
+		var result = true;
 		if (this._state >= Node.States.LOADED && this._state < Node.States.UNLOADING){
 			this.State = Node.States.UNLOADING;
-			var result = null;
-			var asyncUnloadFunc = function(){
-				self.State = Node.States.UNLOADED;
-				if (typeof callback == 'function'){
-					callback.apply(self, arguments)
-				}
+			if (typeof callback == 'function'){
+				this.once("unloaded",function(){
+					callback.apply(self, arguments);
+				});
 			}
 			if (typeof this.unload == 'function') {
-				result = this.unload(asyncUnloadFunc);
-			}
-			else {
-				result = true;
+				result = this.unload();
 			}
 			if (result) {
-				setImmediate(asyncUnloadFunc);
+				self.State = Node.States.UNLOADED;
 			}
 		}		
 		else{
-			console.log("Node " + this.id + " in "  + this.Status + " try to UNLOAD ");
+			if (this._state < Node.States.LOADED){
+				this.State = Node.States.UNLOADED;
+			}
+			else{
+				this.logger.warn("Node " + this.id + " in "  + this.Status + " try to UNLOAD ");
+			}
 		}
 		return result;
 	},
-		
-	Reload : function(newConfig, callback){
-		var self = this;
-		var result = null;
-		if (typeof newConfig == 'function')	{
-			callback = newConfig;
-			newConfig = undefined;
-		}
-		if (typeof this.reload == 'function')
-		{
-			return this.reload(callback);
-		}
-		var asyncLoadFunc = function(){
-			if (typeof callback == 'function'){
-				callback.apply(self, arguments)
-			}
-		}
-		this.Unload(function(){
-			if (newConfig){
-				self.Init(newConfig);
-			}
-			self.Load(asyncLoadFunc);
-		});
-	},
-	
+			
 	Start : function(callback){
 		if (this._state == Node.States.INITIALIZED || this._state == Node.States.LOADED || this._state == Node.States.SLEEP || this._state == Node.States.STOPPED)	{
 			this.State = Node.States.STARTING;
-			var self = this;
-			var result = null;
-			var asyncStartFunc = function(){
-				self.State = Node.States.WORKING;
-				if (typeof callback == 'function'){
-					callback.apply(self, arguments)
-				}
-			}
-			if (typeof this.startAsync == 'function')
-			{
-				return this.startAsync(asyncStartFunc);
-			}
-			else{
-				if (typeof this.start == 'function') var result = this.start();
-			}
+			var self = this;			
 			if (typeof callback == 'function'){
-				setImmediate(asyncStartFunc);
-			}
-			else{
-				result = true;
+				this.once("working",function(){
+					callback.apply(self, arguments);
+				});
+			}			
+			var result = true;
+			if (typeof this.start == 'function') result = this.start();
+			if (result){
 				self.State = Node.States.WORKING;				
 			}
 		}
 		else{
-			console.log("Node " + this.id + " in "  + this.Status + " try to Start ");
+			this.logger.warn("Node " + this.id + " in "  + this.Status + " try to Start ");
 		}
 		return result;
 	},	
@@ -217,7 +165,7 @@ Inherit(Node, EventEmitter, {
 			}
 		}
 		else{
-			console.log("Node " + this.id + " in "  + this.Status + " try to Sleep ");
+			this.logger.warn("Node " + this.id + " in "  + this.Status + " try to Sleep ");
 		}		
 		return result;
 	},
@@ -225,31 +173,20 @@ Inherit(Node, EventEmitter, {
 	Stop : function(callback){
 		if (this._state == Node.States.WORKING || this._state == Node.States.SLEEP)	{
 			this.State = Node.States.STOPPING;
-			var self = this;			
-			var result = null;
-			var asyncStopFunc = function(){
-				self.State = Node.States.STOPPED;
-				if (typeof callback == 'function'){
-			  		callback.apply(self, arguments)
-				}
-			}
-			if (typeof this.stopAsync == 'function')
-			{
-				return this.stopAsync(asyncStopFunc);
-			}
-			else{
-				if (typeof this.stop == 'function') var result = this.stop();
-			}
+			var self = this;	
 			if (typeof callback == 'function'){
-				setImmediate(asyncStopFunc);
+				this.once("stopped",function(){
+					callback.apply(self, arguments);
+				});
 			}
-			else{
-				result = true;
+			var result = true;
+			if (typeof this.stop == 'function') result = this.stop();
+			if (result){
 				self.State = Node.States.STOPPED;
 			}
 		}	
 		else{
-			console.log("Node " + this.id + " in "  + this.Status + " try to Stop ");
+			this.logger.warn("Node " + this.id + " in "  + this.Status + " try to Stop ");
 		}	
 		return result;
 	},
@@ -265,7 +202,7 @@ Inherit(Node, EventEmitter, {
 			if (typeof this.ping == 'function') return this.ping.apply(this.arguments);
 		}		
 		if (this._state < Node.States.LOADED || this._state >= Node.States.UNLOADING){
-			console.log("Node " + this.id + " in "  + this.Status + " ping!");
+			this.logger.warn("Node " + this.id + " in "  + this.Status + " ping!");
 		}
 	},
 		
@@ -296,11 +233,13 @@ Object.defineProperty(Node.prototype, "State",{
 		return this._state;
 	},
 	set : function(value){	
-		var os = this._state;
-		this._state = value;
-		this.emit('state', value, os);
-		if (this.Status){
-			this.emit(this.Status, os);
+		if (value != this._state){
+			var os = this._state;
+			this._state = value;
+			this.emit('state', value, os);
+			if (this.Status){
+				this.emit(this.Status, os);
+			}
 		}
 	}
 });

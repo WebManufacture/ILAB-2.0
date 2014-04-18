@@ -19,8 +19,6 @@ Inherit(IsolatedNode, ManagedNode, {
 		if (IsolatedNode.base.init){
 			IsolatedNode.base.init.call(this, config);
 		}
-		if (!config.file) config.file = config.File;
-		this.path = Path.resolve(config.file);
 		this.logger = new Logger(this.id, true);
 		this.subscribers = {};
 		var fork = this;
@@ -61,91 +59,88 @@ Inherit(IsolatedNode, ManagedNode, {
 	load : function(callback){
 		var config = this.config;
 		var childConfig = JSON.parse(JSON.stringify(config));
+		var path = Path.resolve("./ILAB/Frame.js");
 		var cwd = process.cwd();
 		if (!config.cwd){
 			cwd = config.cwd;
-		}
-		var wd = Path.dirname(this.path);
-		if (!config.wd){
-			wd = config.wd;
 		}
 		childConfig.Type = "internal";
 		childConfig.State = Node.Statuses[Node.States.LOADED];
 		var argsA = [JSON.stringify(childConfig), JSON.stringify(this.subscribers)];
 		var fork = this;
 		try{
-			if (fs.existsSync(fork.path)){
-				var options = { workDir: wd, isChild : true, cwd: cwd, parentNode : fork.id };
-				var cp = fork.process = ChildProcess.fork(fork.path, argsA, { silent: config.useConsole == false, cwd: cwd, env : options });
+			if (fs.existsSync(path)){
+				var options = { isChild : true, cwd: cwd, parentNode : fork.id };
+				var cp = fork.process = ChildProcess.fork(path, argsA, { silent: config.useConsole == false, cwd: cwd, env : options });
 				cp.on("error", function(err){
-					fork.State = Node.States.EXCEPTION;
-					fork.logger.debug("%bright;%yellow;fork error %normal;");
-					fork.logger.error(err);
+					
 				});
-				cp.on("exit", function(){
-					if (fork.State != Node.States.EXCEPTION) fork.State = Node.States.Stopped;
-					fork.logger.debug("%bright;%yellow;fork exited %normal;");
-				});			
+				cp.on("exit", function(code){
+					if (code > 0){						
+						fork.logger.debug("%bright;%yellow;fork error %normal;");
+						fork.logger.error(code);
+						fork.State = Node.States.EXCEPTION;
+					}
+					else{
+						fork.State = Node.States.UNLOADED;
+						fork.logger.debug("%bright;%yellow;fork exited %normal;");
+					}
+				});	
+				cp.once("message", function(message){
+					fork.process.send({ type : "channel.subscribe",  pattern: "/log"});
+				});				
 				cp.on("message", function(message){
 					fork._messageEvent.apply(fork, arguments);
-					if (message.type == "process.state" && message.args[0] == Node.States.LOADED && callback){
-						callback();
-					}
 				});		
 				fork.logger.debug("%bright;%blue;fork starting");
 			}
 			else{
-				callback();
 				this.State = Node.States.EXCEPTION;
 				this.logger.error("Path " + fork.path + " does not exists");
 			}
 		}
 		catch (err){
-			callback();
 			this.State = Node.States.EXCEPTION;
 			this.logger.error(err);
 		}
 		return false;
 	},
 	
-	unload : function(callback){
+	unload : function(){
 		if (this.process){
 			var self = this;
 			var proc = this.process;
 			var exited = false;
-			this.process.send("EXITING");
+			this.process.send("process.unload");
 			var exitTimeout = setTimeout(function(){
 				if (!exited){
-					console.log(("Process: " + self.id + " KILLED BY TIMEOUT!").red);
+					self.logger.error("Process: " + self.id + " KILLED BY TIMEOUT!");
 					proc.kill('SIGINT');	
 				}
-				callback();
 			}, 5000);
 			proc.once("exit", function(){
 				exited = true;
 				clearTimeout(exitTimeout);
-				callback();
+				//see code above
+				//self.State = Node.States.UNLOADED;
 			});			
 			return false;
 		}
-		else
-		{
-			return true;
-		}
+		return true;
 	},
 	
 	start : function(callback){
-		this.process.send("START");
-		return true;
+		this.process.send("process.start");
+		return false;
 	},
 	
 	stop : function(callback){
-		this.process.send("STOP");
-		return true;
+		this.process.send("process.stop");
+		return false;
 	},
 	
 	sleep : function(){
-		this.process.send("SLEEP");
+		this.process.send("process.sleep");
 		return true;
 	},
 			
@@ -165,16 +160,34 @@ Inherit(IsolatedNode, ManagedNode, {
 					fork.emitToChild.apply(fork, arguments);
 				});
 			}*/
-			
+			var args = obj.args;
 			if (obj.type == "process.state"){
 				//this.State = obj.args[0];
-				this.logger.debug("%bright;%blue;fork %normal;{0} => {1} ", Node.Statuses[obj.args[1]], Node.Statuses[obj.args[0]]);
+				this.logger.debug("%bright;%blue;fork %normal;{0} => {1} ", Node.Statuses[args[1]], Node.Statuses[args[0]]);
+				if (this.State <= Node.States.LOADING){
+					var state = obj.args[0];
+					var ostate = obj.args[1];
+					if (state >= Node.States.EXCEPTION && state <= Node.States.LOADED && ostate == Node.States.LOADING){
+						this.State = state;
+					}
+				}
+				else{
+					if (obj.args[0] < Node.States.UNLOADING){
+						this.State = obj.args[0];
+					}
+				}
 				return;
 			}
-			if (obj.type == "channelMessage"){
-				obj.args[0] = "/process.internal" + obj.args[0] + "";
-				//console.log("<< " + (new Date()).formatTime(true));
-				this.emit.apply(this, obj.args);
+			if (obj.type == "channel.follow"){
+				var message = obj.args[0];
+				var route = new Channel.Route(message.source);
+				obj.args[0] = message.source;
+				if (route.is("/log") && obj.args[1]){
+					var msg = obj.args[1];
+					this.logger.log("%bright;%blue;forklog>%normal; " + msg.content, msg.type);
+				}
+				Channels.emit.apply(Channels, obj.args);
+				return;
 			}
 			this.logger.debug("%bright;%blue;fork message %normal; {0} : {1} ", obj.type, obj.args[0]);
 		}
@@ -213,7 +226,7 @@ Inherit(IsolatedNode, ManagedNode, {
 		else{
 			this.subscribers[pattern] = 1;
 		}
-		this.process.send({ type : "channelControl", pattern : pattern, clientId : this.id });
+		this.process.send({ type : "channel.subscribe", pattern : pattern, clientId : this.id });
 		return true;
 	},
 });

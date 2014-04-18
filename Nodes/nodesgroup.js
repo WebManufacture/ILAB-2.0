@@ -82,9 +82,14 @@ Inherit(NodeGroup, ManagedNode, {
 				var node = nodes[nodeId];
 				var item = citems[nodeId];			
 				node.originalId = nodeId;
-				node.Init(item);		
-				if (node.defaultState === undefined){
-					node.defaultState = Node.States.LOADED;
+				try{
+					node.Init(item);		
+					if (node.defaultState === undefined){
+						node.defaultState = Node.States.LOADED;
+					};
+				}
+				catch(err){
+					this.logger.error(err);
 				};
 				this.Nodes[node.id] = node;				
 			}
@@ -93,23 +98,37 @@ Inherit(NodeGroup, ManagedNode, {
 		}
 		catch(err){
 			this.logger.error(err);
+			node.State = Node.States.EXCEPTION;
+			return false;
 		}
+		return true;
 	},
 	
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
-	load : function(callback){
+	load : function(){
 		try{
 			var self = this;
 			
 			var lf = new Async.Waterfall(function loadComplete(){						
-				callback();
+				self.State = Node.States.LOADED;
+				this.destroy();
 			});
 			
 			for (var id in self.Nodes){
 				var node = self.Nodes[id];
-				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING){
-					node.Load(lf.getCallback());
+				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING && node.State >= Node.States.INITIALIZED){
+					try{
+						var cb = lf.getCallback();
+						node.once('initialized', cb);
+						node.once('exception', cb);
+						node.once('loaded', cb);
+						node.Load();
+					}
+					catch(err){
+						lf.revertCallback();
+						this.logger.error(err);
+					};
 				}
 			}
 
@@ -121,37 +140,53 @@ Inherit(NodeGroup, ManagedNode, {
 		return false;
 	},
 
-	unload : function(callback){
+	unload : function(){
 		var self = this;
 		var wf = new Async.EventFall(function unloadComplete(){
 			delete self.Nodes;
-			if (callback) callback();
-			else self.State = Node.States.UNLOADED;
+			self.State = Node.States.UNLOADED;
+			this.destroy();
 		});
-		for (var id in this.Nodes){
-			wf.subscribe(this.Nodes[id], 'unloaded');
+		for (var id in self.Nodes){
+			var node = self.Nodes[id];
+			if (node.State < Node.States.UNLOADING) wf.subscribe(node, "unloaded");
 		}
 		for (var id in this.Nodes){
 			try{
-				 this.Nodes[id].Unload();
+				if (node.State < Node.States.UNLOADING) this.Nodes[id].Unload();
 			}
 			catch (error){
-				console.log(error);				
+				this.logger.error(error);
 			}
 		}
+		wf.check();
+		
 		return false;
 	},
 
 	start : function(callback){
+		var self = this;
 		for (var id in this.Nodes){
 			var node = this.Nodes[id];
-			console.log(id + " " + node.defaultState);
-			if (!node.defaultState || node.defaultState >= Node.States.WORKING || node.defaultState < Node.States.UNLOADING){
-				node.Start(function(){
-					if (this.defaultState == Node.States.SLEEP){
-						this.sleep();
-					}
-				});
+			if ((!node.defaultState || (node.defaultState >= Node.States.WORKING && node.defaultState < Node.States.UNLOADING)) && (node.State >= Node.States.LOADED && node.State <= Node.States.STOPED)){
+				try{
+					node.Start(function(){
+						try{
+							if (this.defaultState == Node.States.SLEEP){
+								this.sleep();
+							}
+							if (this.defaultState == Node.States.STOPPED){
+								this.Stop();
+							}
+						}			
+						catch(err){
+							self.logger.error(err);
+						};
+					});
+				}			
+				catch(err){
+					self.logger.error(err);
+				};
 			}
 		}
 		return true;
@@ -160,28 +195,27 @@ Inherit(NodeGroup, ManagedNode, {
 	stop : function(callback){
 		for (var id in this.Nodes){
 			var node = this.Nodes[id];
-			node.Stop();
+			try{
+				if (node.State >= Node.States.WORKING && node.State < Node.States.STOPED) node.Stop();
+			}			
+			catch(err){
+				self.logger.error(err);
+			};
 		}
-		if (NodeGroup.base.stop){
-			return NodeGroup.base.stop.call(this, callback);
-		}
-		else{
-			return true;
-		}
+		return true;
 	},
 
-	pause : function(callback){
+	sleep : function(callback){
 		for (var id in this.Nodes){
 			var node = this.Nodes[id];
-			node.Pause();
+			try{
+				if (node.State == Node.States.WORKING)	node.Sleep();
+			}			
+			catch(err){
+				self.logger.error(err);
+			};
 		}
-
-		if (NodeGroup.pause.load){
-			return NodeGroup.base.pause.call(this, callback);
-		}
-		else{
-			return true;
-		}
+		return true;
 	},
 
 	SaveConfig : function(){

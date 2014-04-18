@@ -47,7 +47,7 @@ global.log = Logger.log = function(value, type) {
 global.useConsole = true;
 
 consoleColors = {
-	normal : "\u001b[0m\u001b[40m\u001b[37m",
+	normal : "\u001b[40m\u001b[37m\u001b[0m",
 	warn : "\u001b[33m",
 	debug : "\u001b[1m\u001b[30m",	
 	error : "\u001b[1m\u001b[31m", //Red
@@ -116,10 +116,22 @@ Logger.prototype = {
 	debug: function(text) {
 		this._localLog(Logger._parseArguments(arguments), "debug");
 	},
+	
+	log: function(value, type) {
+		this._localLog(Logger._parseArguments(arguments), type);
+	},
 
 	_localLog: function(value, type) {
 		if (!type) {
 			type = "?";
+		}
+		if (global.Channels) {
+			message = { content: value, datetime: new Date(), type: type };
+			var cpostfix = "";
+			if (this.channelPrefix){
+				cpostfix = ("/" + this.channelPrefix);
+			}
+			Channels.emit("/log." + type + cpostfix, message)
 		}
 		if (this.useConsole || !global.Channels){
 			var c = consoleColors[type];
@@ -131,14 +143,6 @@ Logger.prototype = {
 				value += consoleColors.normal;
 			}
 			console.log(value);
-		}
-		if (global.Channels) {
-			value = { content: value, datetime: new Date(), type: type };
-			var cpostfix = "";
-			if (this.channelPrefix){
-				cpostfix = ("/" + this.channelPrefix);
-			}
-			Channels.emit("/log." + type + cpostfix, value)
 		}
 	}
 }

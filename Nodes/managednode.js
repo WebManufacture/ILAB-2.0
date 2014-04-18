@@ -25,7 +25,7 @@ global.Node.Inherit(ManagedNode, {
 
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
-	load : function(callback){
+	load : function(){
 		var self = this;
 		if (self.defaultState == Node.States.WORKING || self.defaultState == Node.States.SLEEP){
 			setImmediate(function(){
@@ -37,7 +37,7 @@ global.Node.Inherit(ManagedNode, {
 			});
 		};		
 		if (ManagedNode.base.load){
-			return ManagedNode.base.load.call(this, callback);
+			return ManagedNode.base.load.call(this);
 		}
 		return true;
 	}
