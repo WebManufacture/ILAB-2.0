@@ -1,1 +1,0 @@
-{HttpPort: 808, HttpHost : "web-manufacture.net", DbPath : [{host: "127.0.0.1", port : 20000}],  DbName : "klab"}
