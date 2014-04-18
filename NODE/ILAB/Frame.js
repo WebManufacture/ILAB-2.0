@@ -87,39 +87,59 @@ try{
 		throw "Node type " + config.Type + " not found!";
 	}
 
-	var unloading = false;
+	var unloadingTimeout = null;
 	
 	function UnloadBlocking(callback) {
-		if (!unloading){
-			unloading = true;
-			node.Unload();
+		if (global.pinterval){
+			clearInterval(global.pinterval);
+		}
+		if (!unloadingTimeout){
+			console.log("EXIT INITIATED");
+		}
+		else{
+			clearTimeout(unloadingTimeout);
 		}
 	}
 	
-	function UnloadSelf(callback) {
-		if (!unloading){
-			unloading = true;
-			node.Unload(function(){
-				process.exit();				
-			});
-		}
-	};
-
 	process.on('SIGTERM', UnloadBlocking);
 	process.on('exit', UnloadBlocking);
-	process.on('EXITING', UnloadSelf);
 
 	if (isChild){
 		process.on("message", function(pmessage){
-			if (pmessage == 'EXITING'){
-				process.emit("EXITING");
-				setTimeout(function(){
-					logger.warn("CHILD PROCESS EXITED BY TIMEOUT 4s !".warn);
+			if (pmessage == 'process.start'){
+				try{
+					node.Start();
+				}
+				catch (error){
+					process.send('error', error);
+				}
+			}
+			if (pmessage == 'process.stop'){
+				try{
+					node.Stop();
+				}
+				catch (error){
+					process.send('error', error);
+				}
+			}
+			if (pmessage == 'process.sleep'){
+				try{
+					node.Sleep();
+				}
+				catch (error){
+					process.send('error', error);
+				}
+			}
+			if (pmessage == 'process.unload'){
+				node.Unload();
+				unloadingTimeout = setTimeout(function(){
+					logger.warn("CHILD PROCESS EXITED BY TIMEOUT 3s !");
+					unloading = true;
 					process.exit();
 				}, 3000);
 			}
 			if (typeof pmessage == "object"){
-				if (pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
+				if (pmessage.type && pmessage.type == "channel.subscribe" && pmessage.pattern){
 					if (pmessage.clientId){
 						var client = Channels.followed[pmessage.clientId];
 						if (client){
@@ -134,11 +154,11 @@ try{
 						client[pmessage.pattern] = 1;
 					}
 					else{
-						logger.warn("Anonymous client DETECTED");				
+						//console.warn("Anonymous client DETECTED " + pmessage.pattern);				
 					}			
 					Channels.followToGlobal(pmessage.pattern);
 				}
-				if (pmessage.type && pmessage.type == "channelMessage"){
+				if (pmessage.type && pmessage.type == "channel.message"){
 					var dateEnd = new Date();
 					var dateStart = new Date(pmessage.date);
 					//console.log("-> " + pmessage.args[0]);
@@ -163,7 +183,7 @@ try{
 		Channels.followed = {};
 
 		function follower(message){
-			Channels.emitToGlobal("message.follow", arguments);
+			Channels.emitToGlobal("channel.follow", arguments);
 		};
 
 		Channels.followToGlobal = function(pattern){
@@ -185,17 +205,17 @@ try{
 			//Channels.emitToGlobal("process." + Node.Statuses[state], arguments);
 		});
 		
-		node.on("unloading", function(){
-			logger.debug("%red;Unloading " + this.id + "  frame service;");
-		});		
-		
-		node.on("unloaded", function(){
-			logger.debug("%red;Frame " + this.id + " unloaded");
-		});	
 	}
 	
 	node.on("state", function(state){
 		logger.info(("%red; " + this.Status));
+	});
+	
+	node.on('unloaded', function(){
+		if (global.pinterval){
+			clearInterval(global.pinterval);
+		}
+		process.exit();				
 	});
 	
 	process.nextTick(function InitSelf(){
@@ -203,25 +223,37 @@ try{
 			console.log("-------------------------------------------------------------------------");
 		}
 		node.once("initialized", function(){
-			node.Load(function loaded(){
-				if (node.State > Node.States.INITIALIZED && node.State < Node.States.UNLOADING){
-					node.Start();
-				}
-				setTimeout(function(){
-					node.Unload();
-				}, 3000);
+			try{
 				global.pinterval = setInterval(function(){
 					if (node.State > Node.States.INITIALIZED && node.State < Node.States.UNLOADING)	node.Ping();
 				}, 1000);
-			});
+				node.Load(function loaded(){
+					if (!isChild){
+						if (node.State > Node.States.INITIALIZED && node.State < Node.States.UNLOADING){
+							node.Start();
+						}				
+					}
+				});
+			}
+			catch (error){
+				if (isChild){
+					process.send('error', error);
+				}
+				else{
+					console.error(error);
+				}
+			}
 		});
-		node.Init(config);
-	});
-
-
-	process.on('exit', function(){
-		if (global.pinterval){
-			clearInterval(global.pinterval);
+		try{
+			node.Init(config);
+		}
+		catch (error){
+			if (isChild){
+				process.send('error', error);
+			}
+			else{
+				console.error(error);
+			}
 		}
 	});
 }

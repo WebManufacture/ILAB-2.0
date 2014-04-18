@@ -193,7 +193,9 @@ Inherit(Async.Waterfall, EventEmitter, {
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
-				self.emit('done');
+				if (!self.destroyed){
+					self.emit('done');
+				}
 			});
 		}
 	},
@@ -202,17 +204,33 @@ Inherit(Async.Waterfall, EventEmitter, {
 		var self = this;
 		this.counter++;
 		return function checkEventsDone(){
-			self.checkFunction();
+			if (!self.destroyed){
+				self.checkFunction();
+			}
 		};
+	},
+	
+	revertCallback : function(){
+		var self = this;
+		if (this.counter > 0){
+			this.counter--;
+		}
 	},
 	
 	check : function(emitter, event){
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
-				self.emit('done');
+				if (!self.destroyed){
+					self.emit('done');
+				}
 			});
 		}
+		return this.counter == 0;
+	},
+	
+	destroy : function(){
+		this.destroyed = true;
 	}
 });
 
@@ -222,7 +240,9 @@ Inherit(Async.EventFall, EventEmitter, {
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
-				self.emit('done');
+				if (!self.destroyed){
+					self.emit('done');
+				}
 			});
 		}
 	},
@@ -231,18 +251,34 @@ Inherit(Async.EventFall, EventEmitter, {
 		var self = this;
 		this.counter++;
 		emitter.once(event, function checkEventsDone(){
-			self.checkFunction();
+			if (!self.destroyed){
+				self.checkFunction();
+			}
 		})
+	},
+	
+	unsubscribe : function(emitter, event, callback){
+		if (this.counter > 0){
+			this.counter--;
+		}
+		emitter.removeListener(event, callback);
 	},
 	
 	check : function(emitter, event){
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
-				self.emit('done');
+				if (!self.destroyed){
+					self.emit('done');
+				}
 			});
 		}
-	}
+		return this.counter == 0;
+	},
+
+	destroy : function(){
+		this.destroyed = true;
+	}	
 });
 
 module.exports = Async;
