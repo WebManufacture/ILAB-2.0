@@ -2,14 +2,14 @@ var fs = require('fs');
 var paths = require('path');
 var ChildProcess = require('child_process');
 var crypto = require('crypto');
-require(paths.resolve('./ILAB/Modules/Channels.js'));
-require(paths.resolve('./ILAB/Modules/Logger.js'));
+useModule('Channels.js');
+var Logger = useModule('Logger.js');
 
 
 module.exports = function(config, server){
 	cfg = config;
 	if (!config) cfg = {};
-	var router = new FilesRouter(cfg);
+	var router = new FilesRouter(cfg.basepath);
 	return router;
 };
 
@@ -30,14 +30,17 @@ global.MimeTypes = Files.MimeTypes = {
 	ttf : "font/truetype; charset=utf-8"
 };
 
-global.FilesRouter = function(cfg){
-	if (!cfg.basepath){
-		cfg.basepath = ".";
+global.FilesRouter = function(basepath){
+	if (!basepath){
+		basepath = ".";
 	}
-	if (cfg.basepath.end("\\")){
-		cfg.basepath = cfg.basepath.substr(0, cfg.basepath.length - 1);
+	if (typeof basepath != "string"){
+		basepath = basepath.basepath;
 	}
-	cfg.basepath = cfg.basepath.replace(/\//g, "\\");
+	if (basepath.end("\\")){
+		basepath = basepath.substr(0, basepath.length - 1);
+	}
+	this.basePath = basepath.replace(/\//g, "\\");
 	this.instanceId = (Math.random() + "").replace("0.", "");
 	this.config = cfg;
 	this.ProcessRequest = function(req, res, url, processCallback){
@@ -95,7 +98,7 @@ global.FilesRouter = function(cfg){
 FilesRouter.prototype.FormatPath = function(fpath){
 	fpath = fpath.replace(/\//g, "\\");
 	if (!fpath.start("\\")) fpath = "\\" + fpath;
-	fpath = this.config.basepath + fpath;
+	fpath = this.basePath + fpath;
 	fpath = fpath.replace(/\//g, "\\");
 	if (fpath.end("\\")) fpath = fpath.substr(0, fpath.length - 1);
 	return fpath.toLowerCase();
@@ -186,13 +189,13 @@ FilesRouter.prototype._DELETE = function(context){
 		info("Deleting " + fpath);
 		fs.unlink(fpath, function(err, result){
 			if (err){
-				Channels.emit("/file-system." + files.instanceId + "/action.delete.error", fpath.replace(files.config.basepath, ""), err, files.config.basepath);
+				Channels.emit("/file-system." + files.instanceId + "/action.delete.error", fpath.replace(files.basePath, ""), err, files.basePath);
 				context.finish(500, "Delete error " + fpath + " " + err);	
 				context.continue();
 				return;
 			}			
-			Channels.emit("/file-system." + files.instanceId + "/action.delete", fpath, files.instanceId,files.config.basepath );
-			context.finish(200, "Deleted " + fpath.replace(files.config.basepath, ""));			
+			Channels.emit("/file-system." + files.instanceId + "/action.delete", fpath, files.instanceId,files.basePath );
+			context.finish(200, "Deleted " + fpath.replace(files.basePath, ""));			
 			context.continue();
 		});
 	});
@@ -210,10 +213,10 @@ FilesRouter.prototype._POST = FilesRouter.prototype._PUT = function(context){
 		fs.writeFile(paths.resolve(fpath), fullData, 'utf8', function(err, result){
 			if (err){
 				context.finish(500, "File " + fpath + " write error " + err);
-				Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.config.basepath, ""), err, files.config.basepath);
+				Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.basePath, ""), err, files.basePath);
 				return;
 			}
-			Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.config.basepath, ""), files.instanceId, files.config.basepath);
+			Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.basePath, ""), files.instanceId, files.basePath);
 			context.finish(200);
 			context.continue();
 		});	

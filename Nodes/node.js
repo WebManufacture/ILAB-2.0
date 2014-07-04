@@ -2,19 +2,14 @@ useModule('utils.js');
 var Logger = useModule("logger.js");
 var EventEmitter = require("events").EventEmitter;
 
-function Node(parentNode, item){
+function Node(parentNode, id){
 	EventEmitter.call(this);	
 	this._state = 0;
 	this.parentNode = parentNode;
 	this.type = Node.Type;
-	if (item){
-		if (!item.id) item.id = "anonimous";
-		this.id = (item.id + "").toLowerCase();
-		var self = this;
-		setImmediate(function(){
-			self.Init(item)
-		});
-	};
+	
+	if (!id) id = ("node" + Math.random()).replace("0.", "");
+	this.id = id.toLowerCase();
 };
 
 global.Node = Node;
@@ -55,30 +50,37 @@ global.Node.Inherit = function(Child, mixin){
 }
 
 Inherit(Node, EventEmitter, {
-	init : function(config){
-		if (!this.id){
-			if (!config.id) config.id = "anonimous";
-			this.id = (config.id + "").toLowerCase();
-		}		
+	configure : function(config){
+		if (!config){
+			console.error("CONFIG CALL WITHOUT ARGUMENTS!");
+			return;
+		}
+		this.config = config;
+		this.lconfig = {};
+		for (var item in config){
+			this.lconfig[item.toLowerCase()] = config[item];
+		}
 		this.logger = new Logger(this.id, true);
-		this.config = config;	
-		return true;
 	},
 	
-	Init : function(item, callback){
+	Init : function(){
 		var self = this;
-		if (typeof callback == 'function'){
-			this.once("initialized",function(){
-				callback.apply(self, arguments);
-			});
-		}
 		if (typeof this.init == 'function')
 		{
-			if (this.init(item)) this.State = Node.States.INITIALIZED;
+			if (this.init()) this.State = Node.States.INITIALIZED;
 		}
 		else{
 			this.State = Node.States.INITIALIZED;
 		}
+	},
+	
+	
+	Configure : function(config){
+	if (!config){
+			console.error("CONFIG CALL WITHOUT ARGUMENTS!");
+			return;
+		}
+		if (typeof this.configure == 'function') this.configure(config);
 	},
 	
 	Load : function(callback){
@@ -236,6 +238,15 @@ Object.defineProperty(Node.prototype, "State",{
 		if (value != this._state){
 			var os = this._state;
 			this._state = value;
+			if (value == Node.States.WORKING){
+				this.logger.info("%green; Working");
+			}
+			if (value == Node.States.STOPPED){
+				this.logger.info("%yellow; Stopped");
+			}
+			if (value == Node.States.UNLOADED){
+				this.logger.info("%magenta; Unloaded");
+			}
 			this.emit('state', value, os);
 			if (this.Status){
 				this.emit(this.Status, os);

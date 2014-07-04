@@ -59,7 +59,7 @@ try{
 		if (this.Config.File){
 			this.module = require(Path.resolve(this.Config.File));
 			if (typeof this.module == "function"){
-				this.module = this.module(this.Config, this.MainRouter, router, logger);
+				this.module(this.Config, this.MainRouter, router, logger);
 			}
 			if (typeof this.module == "object" && this.module.Init){
 				this.module.Init(this.Config, this.MainRouter, router, logger);

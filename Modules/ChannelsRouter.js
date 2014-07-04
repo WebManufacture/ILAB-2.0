@@ -7,7 +7,7 @@ function MapNode(parentPath){
 	this["//"] = parentPath;
 };
 
-global.HttpRouter = function(basePath, timeout, logger){
+global.HttpRouter = function(basePath){
 	this.HandlersIndex = [];
 	this.Handlers = {};
 	this.basePath = "";
@@ -15,9 +15,6 @@ global.HttpRouter = function(basePath, timeout, logger){
 	this.WaitingContextsCount = 0;
 	this.ProcessingContexts = {};
 	this.ProcessingContextsCount = 0;
-	if (!timeout) timeout = 5000;
-	this.timeout = timeout;	
-	this.logger = new useModule("logger.js")("router", true);
 };
 
 global.HttpRouter.prototype = {
@@ -26,7 +23,7 @@ global.HttpRouter.prototype = {
 			this.HandlersIndex.push(phase);
 			this.Handlers[phase] = new MapNode("/");
 		}
-		return this._addHandler(this.Handlers[phase], path.toLowerCase(), handler);
+		this._addHandler(this.Handlers[phase], path.toLowerCase(), handler);
 	},
 	
 	map : function(phase, map){
@@ -42,9 +39,7 @@ global.HttpRouter.prototype = {
 	},
 	
 	GetContext: function(req, res, data){
-		var context = new RoutingContext(req, res, this.basePath, data);
-		context.logger = this.logger;
-		return context;
+		return new RoutingContext(req, res, this.basePath, data);
 	},
 	
 	Process: function(context){
@@ -86,6 +81,7 @@ global.HttpRouter.prototype = {
 		//console.log("calling addhandler! " + JSON.stringify(parts) + " " + endHandlerSymbol);
 		var parentPath = root["//"];
 		var cg = root;
+		var ch = null;
 		for (var i = 0; i < parts.length; i++){
 			var p = parts[i];
 			if (p == ""){
@@ -97,7 +93,9 @@ global.HttpRouter.prototype = {
 			}
 			cg = cg[p + "/"];
 		}
-		var ch = cg[endHandlerSymbol];
+		if (!ch){
+			ch = cg[endHandlerSymbol];	
+		}
 		if (typeof (handler) == "object" && handler instanceof Array){
 			for (var i = 0; i < handler.length; i++){
 				ch.push(handler[i]);
@@ -151,8 +149,6 @@ global.RoutingContext = function(req, res, rootPath, data){
 	this.callPlans = {};
 }
 
-global.RoutingContext.phaseTimeout = 30;
-
 global.RoutingContext.prototype = {	
 	getCallPlan : function(callPlan, mapNode, pathNum){
 		if (!mapNode) {
@@ -190,7 +186,6 @@ global.RoutingContext.prototype = {
 						this.log("CallPlanO ",pathNum, ": ", mapNode["//"], path);// :\n   ", handler[this.req.method].toString());
 						var hobj = {};
 						hobj.handler = handler[this.req.method];
-						hobj.owner = handler;
 						hobj.pathNum = pathNum;
 						hobj.node = mapNode;
 						hobj.path = mapNode["//"];
@@ -205,16 +200,27 @@ global.RoutingContext.prototype = {
 		}
 		return result;
 	},
-		
+	
+	getHandlerFunc : function(handler, mapNode, path){
+		return function(context){
+			context.path = mapNode["//"];
+			context.pathTail = context.pathname.replace(context.path, "");
+			context.log("Calling ", context.path + path, ' with ', context.pathTail);
+			return handler(context);
+		}
+	},
+	
 	callPhaseChain : function(phaseNum, numSpaces){		
 		var context = this;
 		if (!numSpaces) numSpaces = 0;
-		var maxSpaces = 5000/RoutingContext.phaseTimeout;
-		if (this.router && this.router.timeout){
-			maxSpaces = this.router.timeout/RoutingContext.phaseTimeout;
+		var maxSpaces = 1000;
+		if (context.longPhase){
+			maxSpaces = 10000;
 		}
-		if (!context.longPhase && numSpaces > maxSpaces){
-			this._finish(500, "Response timeout " + (maxSpaces * RoutingContext.phaseTimeout/1000) + " seconds ");
+		if (numSpaces > maxSpaces){
+			//this.log("Phases EXEED 100 LIMIT!");
+			this._finish(500, "Phases EXEED " + numSpaces + " LIMIT!");
+			throw new Error("Phases EXEED " + numSpaces + " LIMIT!");
 			return;
 		}
 		if (this.completed) {
@@ -246,14 +252,14 @@ global.RoutingContext.prototype = {
 				}
 				else{
 					if (!this._aborted){
-						if (this.router && !this.router.WaitingContexts[this.id]){
+						if (!this.router.WaitingContexts[this.id]){
 							this.router.WaitingContexts[this.id] = this;
 							this.router.WaitingContextsCount++;
 						}
 						this._currentTimeout = setTimeout(function(){					
 							context.log("New Phase ", phaseNum, " [", context.phases[phaseNum], "] WAITING!", numSpaces);
 							context.callPhaseChain(phaseNum, numSpaces + 1);
-						}, RoutingContext.phaseTimeout);
+						}, 10);
 					}
 					else{
 						this._abortProcessing();
@@ -267,14 +273,14 @@ global.RoutingContext.prototype = {
 		else
 		{
 			if (!this._aborted){
-				if (this.router && !this.router.WaitingContexts[this.id]){
+				if (!this.router.WaitingContexts[this.id]){
 					this.router.WaitingContexts[this.id] = this;
 					this.router.WaitingContextsCount++;
 				}
 				this._currentTimeout = setTimeout(function(){					
 					context.log("Last Phase ", phaseNum, " [", context.phases[phaseNum], "] WAITING!", numSpaces);
 					context.callPhaseChain(phaseNum, numSpaces + 1);
-				}, RoutingContext.phaseTimeout);
+				}, 10);
 			}
 			else{
 				this._abortProcessing();
@@ -299,12 +305,7 @@ global.RoutingContext.prototype = {
 			context.pathTail = "/" + context.paths.slice(hobj.pathNum).join('');
 			context.log("Calling ", context.nodePath, ' with ', context.pathTail);
 			try{
-				if (hobj.owner){
-					var result = hobj.handler.call(hobj.owner, context, context.continue);
-				}
-				else{
-					var result = hobj.handler(context, context.continue);
-				}
+				var result = hobj.handler(context, context.continue);
 				if (result == false)
 				{
 					context.waiting = true;
@@ -317,7 +318,6 @@ global.RoutingContext.prototype = {
 			}
 			catch (error){
 				context.phaseProcessed = true;
-				context.error(error);
 				context._finishWithError(error);
 				return true;
 			}
@@ -348,12 +348,8 @@ global.RoutingContext.prototype = {
 	
 	
 	setHeader : function(header, value){		
-		if (this.finalized || this.res.headersSent) return;
-		return this.res.setHeader(header, value);
-	},
-	
-	getHeader : function(header){		
-		return this.req.headers[header];
+		if (this.finalized) return;
+		this.res.setHeader(header, value);
 	},
 	
 	finish : function(status, result, encoding){
@@ -414,12 +410,12 @@ global.RoutingContext.prototype = {
 		this.completed = true;
 		this.finalized = true;
 		result = result + "";
-		this.setHeader("Start", this.startTime.valueOf());
-		this.setHeader("Finish", new Date().valueOf());
-		this.setHeader("Load", (new Date() - this.startTime) + " ms");
+		this.res.setHeader("Start", this.startTime.valueOf());
+		this.res.setHeader("Finish", new Date().valueOf());
+		this.res.setHeader("Load", (new Date() - this.startTime) + " ms");
 		this.log("executing: ", (new Date() - this.startTime) + " ms");
 		if (status != 200){
-			this.setHeader("Content-Type", "text/plain; charset=utf-8");
+			this.res.setHeader("Content-Type", "text/plain; charset=utf-8");
 		}
 		this.res.statusCode = status;		
 		if (this.debugMode && this.debugMode == "trace"){
@@ -479,24 +475,13 @@ global.RoutingContext.prototype = {
 	},
 	
 	_finishWithError : function(error){
-		if (this.logger){
-			this.logger.warn(error);
-		}
-		if (!this.completed && !this.finalized){
-			if (!this.res.headersSent){
-				this.setHeader("Access-Control-Allow-Origin", "*");
-				this.setHeader("Access-Control-Allow-Methods", "GET, DELETE, PUT, POST, HEAD, OPTIONS, SEARCH");
-				this.setHeader("Access-Control-Allow-Headers", "debug-mode");
-				this.setHeader("Content-Type", "text/plain; charset=utf-8");
-				this.log("end: ", new Date());
-			}
-			this.abort();
-			this.res.statusCode = 500;
-			this.res.end(this.formatError(error));			
-		}
-		else{
-			console.error("UNEXPECTED ROUTER ERROR!");
-			console.error(error);
+		if (!this.completed){
+			this.res.setHeader("Access-Control-Allow-Origin", "*");
+			this.res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, PUT, POST, HEAD, OPTIONS, SEARCH");
+			this.res.setHeader("Access-Control-Allow-Headers", "debug-mode");
+			this.res.setHeader("Content-Type", "text/plain; charset=utf-8");
+			this.log("end: ", new Date());
+			this._finish(500, this.formatError(error));
 		}
 	},
 }

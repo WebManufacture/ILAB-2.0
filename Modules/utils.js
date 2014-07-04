@@ -1,4 +1,37 @@
 var util = require("util");
+var Path = require("path");
+
+//для совместимости!
+if (!global.Frame){
+	function _regOlds(){
+		console.error("USING OBSOLETE ENVIRONMENT!");
+		var ilabPath = process.argv[1];
+		ilabPath = Path.dirname(ilabPath);
+		var NodesPath =  ".\\ILAB\\Nodes\\";
+		var ModulesPath = ".\\ILAB\\Modules\\";
+		var ServicesPath = ".\\ILAB\\Services\\";
+		
+		if (!global.useNodeType){
+			global.useNodeType = function(path){
+				if (path.indexOf(".js") != path.length - 3){
+				  path += ".js";
+				}
+				return require(Path.resolve(NodesPath + path));
+			};
+		}
+
+		if (!global.useModule){
+			global.useModule = function(path){
+				if (path.indexOf(".js") != path.length - 3){
+				  path += ".js";
+				}
+				return require(Path.resolve(ModulesPath + path));
+			};
+		}
+	}
+	
+	_regOlds();
+}
 
 if (!global.Inherit)
 global.Inherit = function (Child, Parent, mixin)

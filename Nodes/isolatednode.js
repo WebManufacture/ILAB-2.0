@@ -15,49 +15,42 @@ global.IsolatedNode = IsolatedNode;
 global.IsolatedNode.Type = "isolated";
 
 Inherit(IsolatedNode, ManagedNode, {
-	init : function(config){
-		if (IsolatedNode.base.init){
-			IsolatedNode.base.init.call(this, config);
+	configure : function(config){
+		if (IsolatedNode.base.configure){
+			IsolatedNode.base.configure.apply(this, arguments);
 		}
 		this.logger = new Logger(this.id, true);
 		this.subscribers = {};
-		var fork = this;
-		if (global.Channels){
-			this._on("", function(route){
-				if (!route) return true;
-				//console.log("internal message detected: " + route.current);
-				if (this.is("/fork/*/process.internal")){
-					return false;
-				};
-				if (fork.process && fork.code == Fork.STATUS_WORKING){
-					//console.log(this); 
-					var params = [];
-					params.push(route.current);
-					for (var i = 1; i < arguments.length; i++){
-						params.push(arguments[i]);
-					}
-					fork.process.send({ type : "channelMessage", route : route.current, args : params, date : new Date() });
-					return true;
-				}
-				return true;
-			});	
-			Channels.tunnelTo(this.id, function(path){
-				if (!path) return true;
-				path = path.current;
-				if (path.length > 0 && path[0] == '/'){
-					path = path.replace("/", '');
-				}
-				fork._subscribeTo(path);
-				return true;
-			});
-		}
 		return true;
 	},
 	
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
-		var config = this.config;
+		var config = this.lconfig;
+		//console.log(config);
+		
+		var fork = this;
+		
+		this.subscribe("", function(route){
+			if (!route) return true;
+			if (fork.process){
+				fork._followTo.apply(fork, arguments); 
+			}
+			return true;
+		});	
+		
+		function SubscriptionTunnel(path){
+			if (!path) return true;
+			path = path.current;
+			if (path.length > 0 && path[0] == '/'){
+				path = path.replace("/", '');
+			}
+			fork._subscribeTo(path);
+			return true;
+		}
+		this.subscribeToChannel("$/" + this.id, SubscriptionTunnel);
+		
 		var childConfig = JSON.parse(JSON.stringify(config));
 		var path = Path.resolve("./ILAB/Frame.js");
 		var cwd = process.cwd();
@@ -67,14 +60,11 @@ Inherit(IsolatedNode, ManagedNode, {
 		childConfig.Type = "internal";
 		childConfig.State = Node.Statuses[Node.States.LOADED];
 		var argsA = [JSON.stringify(childConfig), JSON.stringify(this.subscribers)];
-		var fork = this;
+
 		try{
 			if (fs.existsSync(path)){
 				var options = { isChild : true, cwd: cwd, parentNode : fork.id };
 				var cp = fork.process = ChildProcess.fork(path, argsA, { silent: config.useConsole == false, cwd: cwd, env : options });
-				cp.on("error", function(err){
-					
-				});
 				cp.on("exit", function(code){
 					if (code > 0){						
 						fork.logger.debug("%bright;%yellow;fork error %normal;");
@@ -92,7 +82,8 @@ Inherit(IsolatedNode, ManagedNode, {
 				cp.on("message", function(message){
 					fork._messageEvent.apply(fork, arguments);
 				});		
-				fork.logger.debug("%bright;%blue;fork starting");
+				
+				fork.logger.debug("%bright;%blue;fork starting %normal;" + path);
 			}
 			else{
 				this.State = Node.States.EXCEPTION;
@@ -226,8 +217,14 @@ Inherit(IsolatedNode, ManagedNode, {
 		else{
 			this.subscribers[pattern] = 1;
 		}
-		this.process.send({ type : "channel.subscribe", pattern : pattern, clientId : this.id });
+		if (this.process){
+			this.process.send({ type : "channel.subscribe", pattern : pattern, clientId : this.id });
+		}
 		return true;
+	},
+	
+	_followTo : function(pattern){
+		return this.process.send({ type : "channel.message", pattern : pattern, args : arguments });
 	},
 });
 

@@ -1,6 +1,29 @@
-function Logger(ChannelPrefix, useConsole){
+function Logger(ChannelPrefix, useConsole, level){
 	this.channelPrefix = ChannelPrefix;
 	this.useConsole = useConsole;
+	if (level){
+		this.level = level;
+	}
+	else{
+		if (global.LogLevel){
+			this.level = global.LogLevel;
+		}
+		else{
+			this.level = Logger.Levels.all;
+		}
+	}
+}
+
+Logger.Levels = {
+	fatal : 1,
+	error : 2,
+	warn : 3,
+	info : 4,
+	log : 5,
+	debug : 6,
+	trace : 7,
+	all : 100,
+	"?" : 0
 }
 
 Logger.create = function(cp){
@@ -20,7 +43,7 @@ Logger._parseArguments = function(args){
 
 
 global.info = Logger.info = function(text) {
-    global.log(Logger._parseArguments(arguments), "info");
+    return global.log(Logger._parseArguments(arguments), "info");
 }
 
 global.error = Logger.error = function(error) {
@@ -29,19 +52,19 @@ global.error = Logger.error = function(error) {
 		return;
 	}
 	arguments[0] = { message: error.message, stack: error.stack };
-	global.log(Logger._parseArguments(arguments), "error");
+	return global.log(Logger._parseArguments(arguments), "error");
 }
 
 global.debug = Logger.debug = function(text) {
-    global.log(Logger._parseArguments(arguments), "debug");
+    return global.log(Logger._parseArguments(arguments), "debug");
 }
 
 global.warn = Logger.warn = function(text) {
-    global.log(Logger._parseArguments(arguments), "warn");
+    return global.log(Logger._parseArguments(arguments), "warn");
 }
 
 global.log = Logger.log = function(value, type) {
-	Logger.prototype._localLog.call(this, value, type);
+	return Logger.prototype._localLog.call(this, value, type);
 }
 
 global.useConsole = true;
@@ -97,7 +120,7 @@ Logger.parseFormatedString = function(text){
 
 Logger.prototype = {
 	info: function(text) {
-		this._localLog(Logger._parseArguments(arguments), "info");
+		return this._localLog(Logger._parseArguments(arguments), "info");
 	},
 
 	error: function(error) {
@@ -106,25 +129,33 @@ Logger.prototype = {
 			return;
 		}
 		arguments[0] = { message: error.message, stack: error.stack };
-		this._localLog(Logger._parseArguments(arguments), "error");
+		return this._localLog(Logger._parseArguments(arguments), "error");
 	},
 
 	warn: function(text) {
-		this._localLog(Logger._parseArguments(arguments), "warn");
+		return this._localLog(Logger._parseArguments(arguments), "warn");
 	},
 
 	debug: function(text) {
-		this._localLog(Logger._parseArguments(arguments), "debug");
+		return this._localLog(Logger._parseArguments(arguments), "debug");
+	},
+	
+	trace: function(text) {
+		return this._localLog(Logger._parseArguments(arguments), "trace");
 	},
 	
 	log: function(value, type) {
-		this._localLog(Logger._parseArguments(arguments), type);
+		return this._localLog(Logger._parseArguments(arguments), type);
 	},
 
 	_localLog: function(value, type) {
 		if (!type) {
 			type = "?";
 		}
+		var llevel = Logger.Levels[type];
+		if (llevel && llevel > this.level){
+			return false;
+		}		
 		if (global.Channels) {
 			message = { content: value, datetime: new Date(), type: type };
 			var cpostfix = "";
@@ -144,6 +175,7 @@ Logger.prototype = {
 			}
 			console.log(value);
 		}
+		return true;
 	}
 }
 

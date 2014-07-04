@@ -270,7 +270,7 @@ ILab = {};
 ILab.Init = function(){
 	process.setMaxListeners(100);
 	console.log(process.cwd().prompt);
-	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, routingFile: "RoutingTable.json" };
+	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, cfgFile : "Config.json", routingFile: "RoutingTable.json" };
 	
 	for (var i = 2; i < process.argv.length; i++){
 		var arg = process.argv[i];
@@ -282,7 +282,7 @@ ILab.Init = function(){
 	
 	ILab.Config = cfg;
 	ILab.Nodes = {};
-	if (fs.existsSync(cfg.cfgFile)){
+	if (!fs.existsSync(cfg.cfgFile)){
 		var cfgFile = fs.readFileSync(cfg.cfgFile, "", 'utf8');
 		if (cfgFile && cfgFile.length > 0){
 			cfgFile = JSON.parse(cfgFile);
@@ -582,9 +582,6 @@ ILabRouter.CreateServer = function (Port){
 			return false;
 		}
 	}).listen(Port);
-	httpServer.on('error', function(err){
-		console.error(err);
-	});
 	//ILabRouter.AttachSocketListener(httpServer);
 	return {
 		_httpServer : httpServer

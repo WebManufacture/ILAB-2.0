@@ -20,18 +20,11 @@ global.Async = {
 
 	Waterfall : function(callback){
 		this.counter = 0;
+		this.handlers = [];
 		if (callback){
 			this.once("done", callback);
 		}
 	},
-	
-	EventFall : function(callback){
-		this.counter = 0;
-		if (callback){
-			this.once("done", callback);
-		}
-	},
-
 
 	Collector : function(immediatly,ondone){
 		var count = 0;
@@ -210,43 +203,6 @@ Inherit(Async.Waterfall, EventEmitter, {
 		};
 	},
 	
-	revertCallback : function(){
-		var self = this;
-		if (this.counter > 0){
-			this.counter--;
-		}
-	},
-	
-	check : function(emitter, event){
-		var self = this;
-		if (this.counter == 0){
-			setImmediate(function(){
-				if (!self.destroyed){
-					self.emit('done');
-				}
-			});
-		}
-		return this.counter == 0;
-	},
-	
-	destroy : function(){
-		this.destroyed = true;
-	}
-});
-
-Inherit(Async.EventFall, EventEmitter, {
-	checkFunction : function(){
-		this.counter--;
-		var self = this;
-		if (this.counter == 0){
-			setImmediate(function(){
-				if (!self.destroyed){
-					self.emit('done');
-				}
-			});
-		}
-	},
-
 	subscribe : function(emitter, event){
 		var self = this;
 		this.counter++;
@@ -264,6 +220,19 @@ Inherit(Async.EventFall, EventEmitter, {
 		emitter.removeListener(event, callback);
 	},
 	
+	add : function(callback, thisParam){
+		if (thisParam) callback = CreateClosure(callback, thisParam);
+		this.handlers.push(callback);
+		return callback;
+	},
+	
+	revertCallback : function(){
+		var self = this;
+		if (this.counter > 0){
+			this.counter--;
+		}
+	},
+	
 	check : function(emitter, event){
 		var self = this;
 		if (this.counter == 0){
@@ -274,11 +243,21 @@ Inherit(Async.EventFall, EventEmitter, {
 			});
 		}
 		return this.counter == 0;
+	},	
+	
+	run : function(callback){
+		if (callback){
+			this.once("done", callback);
+		}
+		for(var i = 0; i < this.handlers.length; i++){
+			this.handlers[i]();
+		}
+		this.check();
 	},
-
+	
 	destroy : function(){
 		this.destroyed = true;
-	}	
+	}
 });
 
 module.exports = Async;

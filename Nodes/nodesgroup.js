@@ -26,81 +26,34 @@ global.NodeGroup = NodeGroup;
 global.NodeGroup.Type = "nodesgroup";
 
 Inherit(NodeGroup, ManagedNode, {
-	init : function(cfg){
+	configure : function(cfg){	
+		if (NodeGroup.base.configure){
+			NodeGroup.base.configure.call(this, cfg);
+		}
+		
 		if (!this.id && !cfg.id){
 			this.id = "nodes-group" + parseInt(Math.random()*1000);
 		}
 		
-		if (NodeGroup.base.init){
-			NodeGroup.base.init.call(this, cfg);
-		}
+		this.Modules = [];
+		/*
+		this.subscribe("/control.load", function(){
+			self.Load();
+		}, true);
+				
+		this.subscribe("/control.unload", function(){
+			self.Unload();
+		});
+		this.subscribe("/control.start", function(){
+			self.Start();
+		});
+		this.subscribe("/control.stop", function(){
+			self.Stop();
+		});
+		this.subscribe("/control.sleep", function(){
+			self.Sleep();
+		});*/
 		
-		try{
-			
-			
-			this.Config = cfg;
-			this.Nodes = {};
-			this.Modules = [];
-
-			var self = this;
-
-			if (!cfg.Nodes) cfg.Nodes = {};
-
-			var citems = this.config.Nodes;
-			var nodes = {};
-			
-			for (var nodeId in citems){
-				var item = citems[nodeId];
-				item.id = nodeId;
-				if (!item.Type) item.Type = 'base';
-				var nType = NodesByTypes[item.Type];
-				if (nType){
-					var node = new nType(self);
-					nodes[nodeId] = node;
-					node.on('state', function(state, stateOld){
-						if (this.logger){
-							this.logger.debug("{0} => {1}", Node.Statuses[stateOld],Node.Statuses[state]);
-						}
-						else{
-							self.logger.debug("{0}:%bright;%white;{1} %normal;{2} => {3}", this.type, this.id, Node.Statuses[stateOld],Node.Statuses[state]);
-						}
-					});
-					if (item.State == "working"){
-						this.logger.debug("%green;{0}:%normal;{1} {2}", item.Type, item.id, item.File);
-					}
-					else
-					{
-						this.logger.debug("%yellow;{0}:%normal;{1} {2}", item.Type, item.id, item.File);	
-					}
-				}
-				else{
-					this.logger.warn("Unknown node type: " + item.Type);
-				}
-			}
-			
-			for (var nodeId in nodes){			
-				var node = nodes[nodeId];
-				var item = citems[nodeId];			
-				node.originalId = nodeId;
-				try{
-					node.Init(item);		
-					if (node.defaultState === undefined){
-						node.defaultState = Node.States.LOADED;
-					};
-				}
-				catch(err){
-					this.logger.error(err);
-				};
-				this.Nodes[node.id] = node;				
-			}
-			
-			return true;
-		}
-		catch(err){
-			this.logger.error(err);
-			node.State = Node.States.EXCEPTION;
-			return false;
-		}
 		return true;
 	},
 	
@@ -110,19 +63,72 @@ Inherit(NodeGroup, ManagedNode, {
 		try{
 			var self = this;
 			
+			if (!this.lconfig.nodes) this.lconfig.nodes = {};
+			this.ChildNodes = {};
+			var citems = this.lconfig.nodes;
+			var nodes = {};
+			
+			for (var nodeId in citems){
+				var item = citems[nodeId];
+				item.id = nodeId;
+				var node = Frame.CreateNode(item, 'base', this.logger);
+				if (node){
+					nodes[nodeId] = node;
+					node.on('state', function(state, stateOld){
+						if (this.logger){
+							this.logger.trace("{0} => {1}", Node.Statuses[stateOld], Node.Statuses[state]);
+						}
+						else{
+							self.logger.trace("{0}:%bright;%white;{1} %normal;{2} => {3}", this.type, this.id, Node.Statuses[stateOld],Node.Statuses[state]);
+						}
+					});
+					if (item.State == "working"){
+						this.logger.debug("%green;{0}:%normal;{1} {2}", node.type, item.id, item.File ? item.File : "");
+					}
+					else
+					{
+						this.logger.debug("%yellow;{0}:%normal;{1} {2}", node.type, item.id, item.File ? item.File : "");	
+					}
+				}
+			}
+			
+			for (var nodeId in nodes){			
+				var node = nodes[nodeId];
+				var item = citems[nodeId];			
+				node.originalId = nodeId;
+				try{
+					node.Init();
+					node.Configure(item);
+					if (node.defaultState === undefined){
+						node.defaultState = Node.States.LOADED;
+					};
+				}
+				catch(err){
+					this.logger.error(err);
+				};
+				this.ChildNodes[node.id] = node;				
+			}
+			
 			var lf = new Async.Waterfall(function loadComplete(){						
 				self.State = Node.States.LOADED;
 				this.destroy();
 			});
 			
-			for (var id in self.Nodes){
-				var node = self.Nodes[id];
+			for (var id in self.ChildNodes){
+				var node = self.ChildNodes[id];
+				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING && node.State >= Node.States.INITIALIZED){
+					var cb = lf.getCallback();
+					node.once('initialized', cb);
+					node.once('exception', cb);
+					node.once('loaded', cb);
+					//lf.add(node.Load, node);
+				}
+			}
+			
+			for (var id in self.ChildNodes){
+				var node = self.ChildNodes[id];
 				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING && node.State >= Node.States.INITIALIZED){
 					try{
-						var cb = lf.getCallback();
-						node.once('initialized', cb);
-						node.once('exception', cb);
-						node.once('loaded', cb);
 						node.Load();
 					}
 					catch(err){
@@ -136,24 +142,25 @@ Inherit(NodeGroup, ManagedNode, {
 		}
 		catch(err){
 			this.logger.error(err);
+			this.State = Node.States.EXCEPTION;
 		}
 		return false;
 	},
 
 	unload : function(){
 		var self = this;
-		var wf = new Async.EventFall(function unloadComplete(){
-			delete self.Nodes;
+		var wf = new Async.Waterfall(function unloadComplete(){
+			delete self.ChildNodes;
 			self.State = Node.States.UNLOADED;
 			this.destroy();
 		});
-		for (var id in self.Nodes){
-			var node = self.Nodes[id];
+		for (var id in self.ChildNodes){
+			var node = self.ChildNodes[id];
 			if (node.State < Node.States.UNLOADING) wf.subscribe(node, "unloaded");
 		}
-		for (var id in this.Nodes){
+		for (var id in this.ChildNodes){
 			try{
-				if (node.State < Node.States.UNLOADING) this.Nodes[id].Unload();
+				if (node.State < Node.States.UNLOADING) this.ChildNodes[id].Unload();
 			}
 			catch (error){
 				this.logger.error(error);
@@ -166,9 +173,9 @@ Inherit(NodeGroup, ManagedNode, {
 
 	start : function(callback){
 		var self = this;
-		for (var id in this.Nodes){
-			var node = this.Nodes[id];
-			if ((!node.defaultState || (node.defaultState >= Node.States.WORKING && node.defaultState < Node.States.UNLOADING)) && (node.State >= Node.States.LOADED && node.State <= Node.States.STOPED)){
+		for (var id in this.ChildNodes){
+			var node = this.ChildNodes[id];
+			if ((!node.defaultState || (node.defaultState >= Node.States.WORKING && node.defaultState < Node.States.UNLOADING)) && (node.State >= Node.States.LOADED && node.State <= Node.States.STOPPED)){
 				try{
 					node.Start(function(){
 						try{
@@ -193,10 +200,10 @@ Inherit(NodeGroup, ManagedNode, {
 	},
 
 	stop : function(callback){
-		for (var id in this.Nodes){
-			var node = this.Nodes[id];
+		for (var id in this.ChildNodes){
+			var node = this.ChildNodes[id];
 			try{
-				if (node.State >= Node.States.WORKING && node.State < Node.States.STOPED) node.Stop();
+				if (node.State >= Node.States.WORKING && node.State < Node.States.STOPPED) node.Stop();
 			}			
 			catch(err){
 				self.logger.error(err);
@@ -206,8 +213,8 @@ Inherit(NodeGroup, ManagedNode, {
 	},
 
 	sleep : function(callback){
-		for (var id in this.Nodes){
-			var node = this.Nodes[id];
+		for (var id in this.ChildNodes){
+			var node = this.ChildNodes[id];
 			try{
 				if (node.State == Node.States.WORKING)	node.Sleep();
 			}			
@@ -221,7 +228,7 @@ Inherit(NodeGroup, ManagedNode, {
 	SaveConfig : function(){
 		if (this.ConfigFile){
 			this.logger.info('config rewrite');
-			fs.writeFileSync(this.ConfigFile, JSON.stringify(this.Config), 'utf8');
+			fs.writeFileSync(this.ConfigFile, JSON.stringify(this.config), 'utf8');
 		}
 	},
 	

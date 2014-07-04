@@ -20,7 +20,6 @@ if (!module.parent){
 	};	
 }
 
-
 colors.setTheme({
 	silly: 'rainbow',
 	input: 'grey',

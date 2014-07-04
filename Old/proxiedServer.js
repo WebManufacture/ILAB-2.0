@@ -38,18 +38,15 @@ try{
 		}
 	}
 		
-	ProxiedServer.prototype.Init = function(config, globalConfig, logger , router){
+	ProxiedServer.prototype.Init = function(config, globalConfig, logger){
 		if (config){
 			this.Config = config;
 		}
 		if (!this.Config.ProxyPort) this.Config.ProxyPort = this.Config.Port;
 		if (this.Config.File){
 			this.module = require(Path.resolve(this.Config.File));
-			if (typeof this.module == "function"){
-				this.module = this.module(this.Config, router, logger);
-			}
-			if (typeof this.module == "object" && this.module.Init){
-				this.module.Init(this.Config, router, logger);
+			if (this.module && this.module.Init){
+				this.module.Init(this.Config, logger);
 			}
 		}
 		if (!module.parent){
@@ -135,14 +132,14 @@ try{
 							});
 							return false;
 						}
-						else{
-							if (typeof serv[req.method] == "function"){
+						if (typeof serv.Process == "object"){
+							if (typeof serv.Process[req.method] == "function"){
 								req.on("end", function(){	
-									serv[req.method](req, res, url, fullData);
+									serv.Process[req.method](req, res, url, fullData);
 								});
 								return false;
 							}
-						}
+						}						
 						res.statusCode = 500;
 						res.end("Handler error");
 				}	
