@@ -1,0 +1,20 @@
+<script src="/Socket.io/socket.io.js"></script>
+<script src='http://services.web-manufacture.net/SysUtils/NodeEnvironment.js'></script>
+<script src='http://modules.web-manufacture.net/Channels.js'></script>
+<script>
+	SockChannels = M.GetModuleEndsUrl("/socket.channels.htm");
+	
+	SockChannels.init = function(){
+		var socket = io.connect('/com1/');
+		socket.on('connect', function(s){
+			window.setTimeout(function(){
+				socket.send(JSON.stringify({path:"state.com1", data:"ascasdas"}));
+			}, 540);
+		});
+		
+		socket.on('message', function(data){
+			console.log(data);
+		});
+	};
+	
+</script>

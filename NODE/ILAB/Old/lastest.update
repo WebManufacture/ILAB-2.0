@@ -1,0 +1,3 @@
+{"database":[{"configs":{"path":"/aaa", "collection":"aaa"}},{"configs":{"path":"/bbb","collection":"bbb"}}],
+"files":[{"filename":"lastest.update","path":"http://web-manufacture.net:8000/latest.update"}],
+"code":[]}
