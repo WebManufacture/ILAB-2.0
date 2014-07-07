@@ -1,11 +1,11 @@
 var paths = require('path');
-require(paths.resolve('./ILAB/Modules/Channels.js'));
-log = require(paths.resolve('./ILAB/Modules/Logger.js')).log;
-error = require(paths.resolve('./ILAB/Modules/Logger.js')).error;
-info = require(paths.resolve('./ILAB/Modules/Logger.js')).info;
-debug = require(paths.resolve('./ILAB/Modules/Logger.js')).debug;
+useModule("Channels.js");
+log = useModule('Logger.js').log;
+error = useModule('Logger.js').error;
+info = useModule('Logger.js').info;
+debug = useModule('Logger.js').debug;
 
-var sio = require('socket.io');
+var sio = useSystem('socket.io');
 
 global.SocketChannels = {
 	Attach : function(server, path){

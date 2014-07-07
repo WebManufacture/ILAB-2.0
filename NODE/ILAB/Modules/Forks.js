@@ -1,10 +1,10 @@
 var fs = require('fs');
 var paths = require('path');
 var ChildProcess = require('child_process');
-require(paths.resolve("./ILAB/Modules/Utils.js"));
-require(paths.resolve("./ILAB/Modules/Channels.js"));
-require(paths.resolve("./ILAB/Modules/ChildProcess.js"));
-var logModule = require(paths.resolve("./ILAB/Modules/Logger.js"));
+useModule("Utils.js");
+useModule("Channels.js");
+useModule("ChildProcess.js");
+var logModule = useModule("Logger.js");
 var emitter = require('events').EventEmitter;
 
 global.Fork = function(path, args, id, channelTags){

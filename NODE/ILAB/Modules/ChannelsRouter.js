@@ -1,4 +1,4 @@
-require("./utils.js");
+useModule("Utils.js");
 
 function MapNode(parentPath){
 	this["/"] = [];

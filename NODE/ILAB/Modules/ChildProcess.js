@@ -1,4 +1,5 @@
-require(require("path").resolve("./ILAB/Modules/Utils.js"));
+useModule("Utils.js");
+
 if (global.Channels){
 	process.on("message", function(pmessage){
 		if (pmessage == 'EXITING'){

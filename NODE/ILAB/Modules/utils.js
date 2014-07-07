@@ -10,7 +10,7 @@ if (!global.Frame){
 		var NodesPath =  ".\\ILAB\\Nodes\\";
 		var ModulesPath = ".\\ILAB\\Modules\\";
 		var ServicesPath = ".\\ILAB\\Services\\";
-		
+		var nodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
 		if (!global.useNodeType){
 			global.useNodeType = function(path){
 				if (path.indexOf(".js") != path.length - 3){
@@ -26,6 +26,12 @@ if (!global.Frame){
 				  path += ".js";
 				}
 				return require(Path.resolve(ModulesPath + path));
+			};
+		}
+		
+		if (!global.useSystem){
+			global.useSystem = function(path){
+				return require(Path.resolve(nodeModulesPath + path));
 			};
 		}
 	}

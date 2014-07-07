@@ -1,4 +1,4 @@
-var mongo = require("mongodb");
+var mongo = useSystem("mongodb");
 var Db = mongo.Db,
     Admin = mongo.Admin,
     Connection = mongo.Connection,

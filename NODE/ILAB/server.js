@@ -1,18 +1,57 @@
 var http = require('http');
 var Url = require('url');
 var Path = require('path');
-var debug = require('debug');
-require(Path.resolve("./ILAB/Modules/Utils.js"));
-var logger = require(Path.resolve("./ILAB/Modules/Logger.js"));
-var Forks = require(Path.resolve("./ILAB/Modules/Forks.js"));
-var Files = require(Path.resolve("./ILAB/Modules/Files.js"));
-require(Path.resolve("./ILAB/Modules/Channels.js"));
-var channelsClient = require(Path.resolve("./ILAB/Modules/ChannelsClient.js"));
-var DBProc = require(Path.resolve("./ILAB/Modules/DBProc.js"));
+
+function _regOlds(){
+	console.error("USING OBSOLETE ENVIRONMENT!");
+	var ilabPath = process.argv[1];
+	ilabPath = Path.dirname(ilabPath);
+	var NodesPath =  ".\\ILAB\\Nodes\\";
+	var ModulesPath = ".\\ILAB\\Modules\\";
+	var ServicesPath = ".\\ILAB\\Services\\";
+	var nodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
+	if (!global.useNodeType){
+		global.useNodeType = function(path){
+			if (path.indexOf(".js") != path.length - 3){
+			  path += ".js";
+			}
+			return require(Path.resolve(NodesPath + path));
+		};
+	}
+
+	if (!global.useModule){
+		global.useModule = function(path){
+			if (path.indexOf(".js") != path.length - 3){
+			  path += ".js";
+			}
+			return require(Path.resolve(ModulesPath + path));
+		};
+	}
+	
+	if (!global.useSystem){
+		global.useSystem = function(path){
+			return require(Path.resolve(nodeModulesPath + path));
+		};
+	}
+}
+
+_regOlds();
+
+
+useModule("Utils.js");
+var debug = useSystem('debug');
+var logger = useModule("Logger.js");
+var Forks = useModule("Forks.js");
+var Files =  useModule("Files.js");
+ useModule("Channels.js");
+var channelsClient =  useModule("ChannelsClient.js");
+var DBProc =  useModule("DBProc.js");
 var fs = require('fs');
-var httpProxy = require('http-proxy');
+var httpProxy = useSystem('http-proxy');
 var proxy = new httpProxy.createProxyServer({});
-var colors = require('colors');
+var colors = useSystem('colors');
+
+
 
 colors.setTheme({
 	silly: 'rainbow',

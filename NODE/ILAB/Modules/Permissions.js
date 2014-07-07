@@ -1,7 +1,7 @@
 
-var log = require("./log.js").info;
-log.error = require("./log.js").error;
-log.debug = require("./log.js").debug;
+var log = useModule("log.js").info;
+log.error = useModule("log.js").error;
+log.debug = useModule("log.js").debug;
 log.info = log;
 
 var https = require('https');
@@ -10,8 +10,8 @@ var paths = require('path');
 var fs = require("fs");
 
 try{	
-	require('./Mongo.js');
-	var server = require("./DBServer.js");
+	useModule('Mongo.js');
+	var server = useModule("DBServer.js");
 	
 	function InitDB(){
 		//Подключаем базу данных
