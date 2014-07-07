@@ -270,7 +270,7 @@ ILab = {};
 ILab.Init = function(){
 	process.setMaxListeners(100);
 	console.log(process.cwd().prompt);
-	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, routingFile: "RoutingTable.json" };
+	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, routingFile: "./ILAB/RoutingTable.json" };
 	
 	for (var i = 2; i < process.argv.length; i++){
 		var arg = process.argv[i];
