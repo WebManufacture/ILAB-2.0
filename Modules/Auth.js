@@ -1,10 +1,10 @@
+useModule("Utils.js");
 var url = require('url');
 var crypto = require('crypto');
 var Path = require('path');
 var EventEmitter = require("events").EventEmitter;
-require(Path.resolve("./ILAB/Modules/Utils.js"));
-require(Path.resolve("./ILAB/Modules/Logger.js"));
-var Storage = require(Path.resolve("./ILAB/Modules/Storage.js"));
+useModule("Logger.js");
+var Storage = useModule("Storage.js");
 
 Auth = function(config){
 	this.storage = new Storage(config.Storage);

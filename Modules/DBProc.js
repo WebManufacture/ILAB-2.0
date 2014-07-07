@@ -1,6 +1,6 @@
-ObjectID = require('mongodb').ObjectID;
+ObjectID = useSystem('mongodb').ObjectID;
 var Path = require('path');
-require(Path.resolve("./ILAB/Modules/Mongo.js"));
+useModule("Mongo.js");
 
 module.exports = function(config, collection, logger){
 	if (logger){

@@ -7,7 +7,7 @@
 	Nodes : {
 		Routing : {
 			Type : "internal",
-			Module:"./_ILAB/Services/RoutingService.js",
+			Module:"./ILAB/Services/RoutingService.js",
 			Path : "" ,
 			DefaultPort : 1000,
 			ChannelsTerminator : false,
@@ -42,13 +42,13 @@
 		},
 		TcpEmulator: {Type:"isolated", State:"working", port:5012},
 		Static : {
-			Type: "internal", Module : "./_ILAB/Services/StaticService.js", basepath:"./_ILAB", State:"working", channel: "Sites"
+			Type: "internal", Module : "./ILAB/Services/StaticService.js", basepath:"./ILAB", State:"working", channel: "Sites"
 		},
 		AdminService : {
-			Node : "./_ILAB/ConfigService/AdminService.js", DefaultFile : "Config.htm", State:"working", basepath:"./_ILAB/ConfigService"
+			Node : "./ILAB/ConfigService/AdminService.js", DefaultFile : "Config.htm", State:"working", basepath:"./ILAB/ConfigService"
 		},
 		KLab : {
-			Type: "internal", File : "./_KLab/KLabService.js", "basepath":".", "State":"initialized"
+			Type: "internal", File : "./KLab/KLabService.js", "basepath":".", "State":"initialized"
 		},
 		Test1 : {
 			State: "initialized"
