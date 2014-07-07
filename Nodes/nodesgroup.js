@@ -1,5 +1,4 @@
 var Path = require('path');
-var debug = require('debug');
 
 useModule("Utils.js");
 useModule("Async.js");

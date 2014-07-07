@@ -1,0 +1,76 @@
+[ 
+	{
+		"id":"Admin",
+		"Process":"internal",
+		"Host":"config.web-manufacture.net",
+		"Type" : "managed",
+		"basepath":"./ILAB/ConfigService",
+		"Frame":"./ILAB/Services/ManagedServer",
+		"File":"./ILAB/ConfigService/AdminServer.js",
+		"State":"working"
+	},
+	{
+		"id":"KLAB",
+		"HTTP":"klab.web-manufacture.net",
+		"Host":"klab.web-manufacture.net",
+		"Process":"isolated",
+		"Type" : "proxied",
+		"Frame":"./ILAB/Services/ManagedServer", 
+		"File":"./KLAB/KLabServer.js",
+		"State":"working"
+	}, 
+	{
+		"id":"ILAB",
+		"HTTP":"ilab.web-manufacture.net",
+		"Host":"ilab.web-manufacture.net",
+		"Process":"isolated",
+		"Type" : "proxied",
+		"File":"./ILAB/Services/VirtualServer.js", 
+		"State":"idle"
+	},
+	
+	{"id":"Services","Host":"services.web-manufacture.net","Process":"internal","File":"./ILAB/Services/StaticServer.js","Type":"proxied","basepath":"./PROJECTS/services","State":"working"},
+	
+	{"id":"Modules","Host":"modules.web-manufacture.net","Process":"internal","File":"./ILAB/Services/StaticServer.js","Type":"proxied","basepath":"./ILAB/modules","State":"working"},
+	
+	{"id":"System","Host":"system.web-manufacture.net","Process":"internal","File":"./ILAB/Services/StaticServer.js","Type":"proxied","basepath":"./PROJECTS/system","State":"working"},
+		
+	{"id":"SecureServer", "Host":"security.web-manufacture.net","Process":"isolated", "Type":"proxied", "Frame":"ILAB/Services/ProxiedServer", "Storage":"./ILAB/Storage/AuthStorage.json", "File":"./ILAB/Services/AuthServer.js","State":"working"},
+	
+	{"id":"StorageServer", "Host":"storage.web-manufacture.net", "Type":"proxied", "Process":"isolated", "Frame":"ILAB/Services/ProxiedServer", "Storage":"./ILAB/Storage/Server.json", "File":"ILAB/Services/StorageServer.js","State":"working"},
+	
+	{"id":"WebManufacture",
+	 "Host":"web-manufacture.net",
+	 "Path": "/<", 
+	 "Process":"internal",
+	 "File":"./ILAB/Services/StaticServer.js",
+	 "Mode":"ReadOnly",
+	 "DefaultTemplate":"Frame.htm",
+	 "Type":"managed",
+	 "basepath":"./PROJECTS/WebManufacture",
+	 "State":"working"},
+
+	{"id":"HLAb","Host":"hlab.web-manufacture.net","Process":"internal","File":"./ILAB/Services/StaticServer.js", "Type":"managed","basepath":"./HLAB","DefaultFile":"index.htm","State":"working"},
+	
+	{"id":"RoboPlatform","Host":"roboplatform.web-manufacture.net","Process":"internal","File":"./ILAB/Services/StaticServer.js", "Type":"proxied","basepath":"./HLAB/RoboPlatform","DefaultFile":"index.htm","State":"working"},
+	
+	{"id":"Identification", "Host":"identification2.web-manufacture.net", "Frame":"./ILAB/Services/ManagedServer", "Path":"/identification/>","Process":"isolated", "Type":"managed", "File":"./PROJECTS/identification/ServerIPC.js","State":"idle"},
+	
+	{"id":"CncPlatform", "Host":"cnc.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"CncTable.htm","basepath":"./HLAB/CncController", "File":"./ILAB/Services/StaticServer.js","State":"idle"},
+	
+	{"id":"VideoHost", "Host":"video.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"Index.htm","basepath":"./Projects/VideoNet", "File":"./ILAB/Services/StaticServer.js","State":"idle"},
+	
+	{"id":"CncController", "Host":"cnc.web-manufacture.net", "Port": 6670, "Type":"proxied", "Frame":"ILAB/Services/ManagedServer", "Process":"isolated","File":"HLAB/cnccontroller/CncController.js","State":"idle",
+	 "DeviceCfg":{
+		 "type":"tcp",
+		 "host":"127.0.0.1",
+		 "port":5012
+	 }
+	},
+	
+	{"id":"TcpEmulator", "Process":"isolated", "File":"./PROJECTS/FerroShow/Bridge.js","State":"idle"},
+		
+	{"id":"NewServer", "Process":"isolated", "File":"./ILAB/internalserver.js","State":"idle", "ConfigFile" : "./ILAB/Config.json"},
+	
+	{"id":"SalesForce", "Host":"identification.web-manufacture.net", "Frame":"./ILAB/Services/ManagedServer","Process":"isolated", "Type":"proxied", "File":"./PROJECTS/SalesForce/server.js","State":"idle"}
+]

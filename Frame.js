@@ -9,6 +9,7 @@ Frame.ilabPath = Path.dirname(Frame.ilabPath);
 Frame.NodesPath =  Frame.ilabPath + "\\Nodes\\";
 Frame.ModulesPath = Frame.ilabPath + "\\Modules\\";
 Frame.ServicesPath = Frame.ilabPath + "\\Services\\";
+Frame.NodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
 Frame.Nodes = {};
 
 global.useNodeType = Frame.useNodeType = function(path){
@@ -24,6 +25,10 @@ global.useModule = Frame.useModule = function(path){
 	  path += ".js";
 	}
 	return require(Path.resolve(Frame.ModulesPath + path));
+};
+
+global.useSystem = Frame.useSystem = function(path){
+	return require(Path.resolve(Frame.NodeModulesPath + path));
 };
 
 global.useService = Frame.useService = function(path){

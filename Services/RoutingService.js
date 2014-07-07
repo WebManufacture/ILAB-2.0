@@ -2,8 +2,8 @@ var http = require('http');
 var Net = require('net');
 var Url = require('url');
 var Path = require('path');
-var Cookie = require('cookies');
-var httpProxy = require('http-proxy');
+var Cookie = useSystem("cookies");
+var httpProxy = useSystem('http-proxy');
 
 useModule("Utils.js");
 var logger = useModule("Logger.js");
