@@ -8,8 +8,7 @@ function Node(parentNode, id){
 	this.parentNode = parentNode;
 	this.type = Node.Type;
 	
-	if (!id) id = ("node" + Math.random()).replace("0.", "");
-	this.id = id.toLowerCase();
+	if (id) this.id = id.toLowerCase();
 };
 
 global.Node = Node;
@@ -51,6 +50,11 @@ global.Node.Inherit = function(Child, mixin){
 
 Inherit(Node, EventEmitter, {
 	configure : function(config){
+		if (!this.id) {
+			this.id = (this.Type + Math.random()).replace("0.", "");
+			this.id = this.id.toLowerCase();
+		}
+	
 		if (!config){
 			console.error("CONFIG CALL WITHOUT ARGUMENTS!");
 			return;

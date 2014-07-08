@@ -11,6 +11,8 @@ Frame.ModulesPath = Frame.ilabPath + "\\Modules\\";
 Frame.ServicesPath = Frame.ilabPath + "\\Services\\";
 Frame.NodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
 Frame.Nodes = {};
+Frame.Modules = [];
+Frame.Services = {};
 
 global.useNodeType = Frame.useNodeType = function(path){
 	if (path.indexOf(".js") != path.length - 3){
@@ -201,7 +203,7 @@ Frame._initFrame = function(){
 	}		
 
 	function useConfig(){
-		if (config.LogLevel && Logger.Levels[config.LogLevel + ""]) global.LogLevel = Logger.Levels[config.LogLevel + ""];
+		if (config.LogLevel && Logger.Levels[config.LogLevel + ""]) Frame.LogLevel = Logger.Levels[config.LogLevel + ""];
 		if (!config.id){
 			config.id = "Main";
 		}	
@@ -354,7 +356,6 @@ Frame._initFrame = function(){
 			Channels.emitToGlobal("process.state", arguments);
 			//Channels.emitToGlobal("process." + Node.Statuses[state], arguments);
 		});
-		
 	}
 
 	Frame.RootNode.on("state", function(state){

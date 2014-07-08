@@ -5,8 +5,8 @@ function Logger(ChannelPrefix, useConsole, level){
 		this.level = level;
 	}
 	else{
-		if (global.LogLevel){
-			this.level = global.LogLevel;
+		if (Frame && Frame.LogLevel){
+			this.level = Frame.LogLevel;
 		}
 		else{
 			this.level = Logger.Levels.all;
