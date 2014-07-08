@@ -1,8 +1,8 @@
 {
 	Ver : "0.3.2", 
-	LogLevel: "debug",
+	LogLevel: "info",
 	Modules : ["ilab_nodes_connectivity.js"],
-	Type: "nodesgroup", 
+	Type: "FrameNode", 
 	State : "working",
 	Nodes : {
 		Routing : {

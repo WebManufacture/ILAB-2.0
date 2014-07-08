@@ -1,8 +1,11 @@
-global.Channel = function(route){
+function Channel(route){
 	this.name = route;
 	this.routes = { $path : "/" };
 }
 
+if (typeof global === "undefined") global = window;
+
+global.Channel = Channel;
 //Channel.RegExp = /^((?:(?:[a-z\d\-_*])*\/?)*)?([<>])?(#[a-z\d\-_]+)?((?:\.[a-z\d\-_]+)*$)/;
 //Channel.RegExp.compile();
 
@@ -194,7 +197,6 @@ Channel.prototype.un = Channel.prototype.clear = Channel.prototype._removeListen
 	return this._removeHandler(this._getRoute(this.routes, route), handler);
 };
 
-
 Channel.prototype.onSubscribe = Channel.prototype.tunnelTo = function(route, callback){
 	if (!route.start("$/")){
 		if (!route.start("/")) route = "/" + route;
@@ -206,7 +208,6 @@ Channel.prototype.onSubscribe = Channel.prototype.tunnelTo = function(route, cal
 	return this.on(route, callback);
 };
 
-
 Channel.prototype.emit = function(route){
 	var route = Channel.ParsePath(route);
 	if (!route) return;
@@ -216,13 +217,44 @@ Channel.prototype.emit = function(route){
 	route.callplan = [];
 	var count = this._sendMessage(root, route, 0, arguments);
 	var results = [];
-	for (var i = route.callplan.length - 1; i >= 0; i--){
-		results.push(route.callplan[i]());
+	var handlers = [];
+	if (count == 0) route.completed = true;
+	var channel = this;
+	function onCompleteFunction(){
+		route.completed = true;
+		for (var i = 0; i < handlers.length; i++){
+			handlers[i].call(channel, route, results);
+		}		
 	}
-	return results;
+	resultObj = {
+		results : results,
+		end : function(callback){
+			if (count > 0){
+				handlers.push(callback);
+			}
+			else{
+				setTimeout(function(){
+					callback.call(channel, route, results);
+				},2);
+			}
+		}
+	};
+	route.stop = function(){
+		route._waterfallFunc = null;
+		onCompleteFunction();
+	}
+	route._waterfallFunc = function(route, result){
+		results.push(result);
+		count--;
+		if (count <= 0){
+			onCompleteFunction();
+		}
+	};
+	for (var i = route.callplan.length - 1; i >= 0; i--){
+		route.callplan[i]();
+	}
+	return resultObj;
 }; 
-
-
 		
 Channel.prototype._addRouteHandler = function(root, callback){
 	if (!root) return null;
@@ -392,14 +424,22 @@ Channel.prototype._callHandlerAsync = function(route, callback, param, args){
 	var param5 = args[5];
 	function callCallback(){
 		if (channel == global.Channels){
-			return callback.call(route, param, param1, param2, param3, param4, param5);
+			var result = callback.call(route, param, param1, param2, param3, param4, param5);
+			if (route._results){
+				route._results.push(result);
+			}
+			if (route._waterfallFunc){
+				route._waterfallFunc.call(channel, route, result);
+			}
 		}
 		else{
-			return callback.call(channel, param, param1, param2, param3, param4, param5);
+			var result = callback.call(channel, param, param1, param2, param3, param4, param5);
 		}
 	}
 	if (route.callplan){
-		route.callplan.push(callCallback);
+		route.callplan.push(function(){
+			setTimeout(callCallback, 1);
+		});
 	}
 	else{
 		setTimeout(callCallback, 2);
