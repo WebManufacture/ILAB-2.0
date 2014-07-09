@@ -95,3 +95,5 @@ Selector.first = function(txt){
 		return items[0];
 	}	
 }
+
+module.exports = Selector;

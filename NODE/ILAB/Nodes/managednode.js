@@ -26,6 +26,9 @@ global.Node.Inherit(ManagedNode, {
 		if (ManagedNode.base.configure){
 			result = ManagedNode.base.configure.apply(this, arguments);
 		}		
+		if (this._selector && this._selector.meta){
+			this.defaultState = Node.StatusToInt(this._selector.meta);		
+		}
 		if (this.lconfig.state !== undefined){
 			this.defaultState = Node.StatusToInt(this.lconfig.state);		
 		}
@@ -38,8 +41,6 @@ global.Node.Inherit(ManagedNode, {
 		else{
 			this.channel = this.id;
 		}
-		
-		debugger;
 		Channels.onSubscribe(this.id, CreateClosure(this.onSubscribe, this));
 		return result;
 	},

@@ -12,7 +12,7 @@ useModule("Router.js");
 useNodeType("ManagedNode.js");
 
 function RoutingService(parentNode, config){
-
+	
 };
 
 RoutingService.prototype = {

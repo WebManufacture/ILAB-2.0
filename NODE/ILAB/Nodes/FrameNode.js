@@ -3,6 +3,7 @@ var Path = require('path');
 useModule("Utils.js");
 useModule("Async.js");
 useModule("channels.js");
+Selector = useModule("Selectors.js");
 useNodeType("node.js");
 useNodeType("ManagedNode.js");
 
@@ -70,10 +71,14 @@ Inherit(FrameNode, ManagedNode, {
 			
 			for (var nodeId in citems){
 				var item = citems[nodeId];
-				item.id = nodeId;
+				var selector = Selector.parse(nodeId);
+				if (!selector.id) selector.id = "node" + parseInt(Math.random()*1000);
+				if (!item.id) item.id = selector.id;
+				if (!item.type) item.type = selector.type;
 				var node = Frame.CreateNode(item, 'base', this.logger);
 				if (node){
-					nodes[nodeId] = node;
+					node.selector = _selector;
+					nodes[node.id] = node;
 					node.on('state', function(state, stateOld){
 						if (this.logger){
 							this.logger.trace("{0} => {1}", Node.Statuses[stateOld], Node.Statuses[state]);

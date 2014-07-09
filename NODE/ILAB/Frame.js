@@ -33,11 +33,26 @@ global.useSystem = Frame.useSystem = function(path){
 	return require(Path.resolve(Frame.NodeModulesPath + path));
 };
 
-global.useService = Frame.useService = function(path){
+global.useService = Frame.useService = function(path, config){
 	var service = Frame.Services[path];
 	if (service) return service;
-	Frame.Services[path] = service = Frame.Nodes[id];
-	if (service) return service;
+	var serviceNodeType = Frame.NodesByTypes["service"];
+	if (!serviceNodeType) throw "Service node not available!";	
+	service = Frame.Nodes[path];
+	if (service){
+		if (!(service instanceof serviceNodeType)) throw "Using incorrect " + path + " node as service!";	
+		Frame.Services[path] = service;
+		if (config) service.configure(config);
+		return service;
+	}
+	if (path.indexOf(".js") != path.length - 3){
+	  path += ".js";
+	}
+	if (!config) config = {};
+	config.Service = path;
+	service = Frame.CreateNode(config, serviceNodeType, Frame.Logger);
+	Frame.Services[path] = service;
+	return service;
 };	
 
 Frame.Services = {};
@@ -99,8 +114,13 @@ Frame.CreateNode = function(config, defaultNode, logger){
 		}
 		else{
 			if (defaultNode) {
-				config.Type = defaultNode;
-				return Frame.CreateNode(config, defaultNode, logger);
+				if (typeof defaultNode == "string"){
+					config.Type = defaultNode;
+					return Frame.CreateNode(config, defaultNode, logger);
+				}
+				if (defaultNode && typeof defaultNode == "object"){
+					node = new defaultNode(this, config.id);
+				}
 			}
 		}		
 	}
