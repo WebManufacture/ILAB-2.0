@@ -3,11 +3,10 @@ var Url = require('url');
 var fs = require('fs');
 var Path = require('path');
 
-require(Path.resolve("./ILAB/Modules/Utils.js"));
-var sio = useSystem('socket.io');
+var sio = require('socket.io');
 
 try{
-
+	require(Path.resolve("./ILAB/Modules/Utils.js"));
 	require(Path.resolve("./ILAB/Modules/Channels.js"));
 	var channelsClient = require(Path.resolve("./ILAB/Modules/ChannelsClient.js"));
 	require(Path.resolve("./ILAB/Modules/ChildProcess.js"));

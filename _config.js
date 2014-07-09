@@ -4,16 +4,16 @@
 	Modules : ["ilab_nodes_connectivity.js"],
 	Type: "FrameNode", 
 	State : "working",
-	Nodes : {
-		Routing : {
-			Type : "internal",
-			Module:"./ILAB/Services/RoutingService.js",
+	ChildNodes : {
+		"service#Channels:working" : {
+			Service : "./ILAB/Services/ChannelService.js", 
+		},
+		"service#Routing:working" : {
+			Service: "./ILAB/Services/RoutingService.js",
 			Path : "" ,
 			DefaultPort : 1000,
 			ChannelsTerminator : false,
 			Routes : {
-				"http://default/Config/<": "AdminService/Static",
-				"http://default/Config/Nodes/<": "AdminService/Nodes",
 				"hmch://default/": "/",
 				"http://klab.web-manufacture.net/<" : "klab", 
 				"http://ilab.web-manufacture.net/<" : "iLab",
@@ -38,18 +38,97 @@
 				"channels://uart.output" : "TcpEmulator/UartSender",
 				"channels://uart.input" : "TcpEmulator/UartSender"
 			},
-			State : "working"
+			Requires : {
+				ChannelsService : "#Channels"
+			}
 		},
-		TcpEmulator: {Type:"isolated", State:"working", port:5012},
+		Files : {
+			Type: "Service", 
+			Service : "./ILAB/Services/FilesService.js", 
+			Paths : {
+				BasePath : "./ILAB"
+			},
+			State:"working", 
+			Services: {
+				"#Channel" : "Files"
+			}
+		},		
 		Static : {
-			Type: "internal", Module : "./ILAB/Services/StaticService.js", basepath:"./ILAB", State:"working", channel: "Sites"
+			Type: "service", 
+			Service : "./ILAB/Services/StaticService.js", 
+			Paths : {
+				BasePath : "./ILAB"
+			},
+			State:"working", 
+			Channel: "Sites",
+			Requires : {
+				FilesService : "#Files",
+				RoutingService : "#Routing"
+			}
 		},
-		AdminService : {
-			Node : "./ILAB/ConfigService/AdminService.js", DefaultFile : "Config.htm", State:"working", basepath:"./ILAB/ConfigService"
+		"Service#Admin:working" : {
+			Service : "./ILAB/Services/ConfigService/AdminService.js", 
+			State:"working", 
+			Paths : {
+				BasePath : "./ILAB/Services/ConfigService",
+				ConfigPage: "Config New.htm",
+				NodePage: "Node.htm"
+			},
+			Services: {
+				Routing : {
+					Routes : {
+						"http://default/Config/<": "AdminService/Static",
+						"http://default/Config/Nodes/<": "AdminService/Nodes",
+						"hmch://default/Config/Control/<": "AdminService/Control",
+						"hmch://default/Config/Logs/<": "AdminService/Logs",
+					}
+				}
+			}
 		},
 		KLab : {
-			Type: "internal", File : "./KLab/KLabService.js", "basepath":".", "State":"initialized"
+			Type: "service", 
+			Service : "./KLAB/KLabService.js", 
+			Paths : {
+				BasePath : "./KLAB"
+			},
+			State:"initialized", 
+			Channel: "Sites",
+			Requires : {
+				StaticService : "Static",
+				RoutingService : "Routing"
+			}
 		},
+		"Service#Secure:initialized" : {
+			Service : "./ILAB/Services/SecureServer.js", 
+			Channel: "Secure",
+			Requires : {
+				StorageService : "Storage",
+				RoutingService : "Routing"
+			}
+			Services : {
+				StorageService : {
+					Storage : "./ILAB/Storage/AuthStorage.json"
+				}
+				RoutingService : {
+					Routes : {
+						"http://security.web-manufacture.net" : "Secure"
+					}
+				}
+			}
+		},
+		"Service#Storage:initialized" : {
+			Service : "./ILAB/Services/StorageServer.js", 
+			Channel: "Storage",
+			Paths : {
+				BasePath: "./ILAB/Storage",
+				TempPath: "./ILAB/Storage/Temp",
+				SitesPath: "./ILAB/Storage/Sites",
+				UsersPath: "./ILAB/Storage/Users",
+				ServerStorage : "./ILAB/Storage/Server.json"
+			}
+		},
+		
+		TcpEmulator: {Type:"isolated", State:"working", port:5012},
 		Test1 : {
 			State: "initialized"
 		},

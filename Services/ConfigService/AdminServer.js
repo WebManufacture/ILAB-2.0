@@ -28,10 +28,10 @@ AdminServer = {
 	},
 	
 	Start : function(server){
-		this.SockServer = useSystem('socket.io').listen(server, { log: false });
+		this.SockServer = require('socket.io').listen(server, { log: false });
 		this.SockServer.on('connection', function (socket) {
-			var path = '/';
-			if (socket.namespace) path += socket.namespace.name;
+			//console.log(socket);
+			var path = '/' + socket.namespace.name;
 			console.log("S>>> Channel subscribe: " + path);
 			var handler = function(data, arg){
 				socket.emit('message', [data, arg]);
