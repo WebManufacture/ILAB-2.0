@@ -1,7 +1,10 @@
+var Path = require('path');
+
 useNodeType("node.js");
 useNodeType("managednode.js");
 useModule("logger.js");
-var Path = require('path');
+var Storage = useModule("Storage.js");
+
 
 function ServiceNode (parentNode, item){
 	ServiceNode.super_.apply(this, arguments);
@@ -15,9 +18,13 @@ global.ServiceNode.Type = "service";
 Inherit(ServiceNode, ManagedNode, {
 	init : function(){
 		this.configured = false;
+		if (!Frame.Services) Frame.Services = new Storage();
+		this.requiredServices = [];
+		var result = true;
 		if (ServiceNode.base.init){
-			return ServiceNode.base.init.apply(this, arguments);
+			result = ServiceNode.base.init.apply(this, arguments);
 		}
+		this.RequireService("СhannelsService");
 		return true;
 	},
 	
@@ -26,86 +33,79 @@ Inherit(ServiceNode, ManagedNode, {
 		if (ServiceNode.base.configure){
 			return ServiceNode.base.configure.apply(this, arguments);
 		}
+		if (this.lconfig.requires){
+			for (var i = 0; i < this.lconfig.requires.length; i++){
+				var selector = this.lconfig.requires[i];
+				if (!this.RequireService(selector)) this.State = Node.States.EXCEPTION;
+			}
+		}
+		return true;
+	},
+	
+	configureExternal : function(config, rservice){
+		if (!this.externalServices) this.externalServices = {};
+		this.externalServices[rservice] = config;
+	},
+	
+	unconfigureExternal : function(rservice){
+		if (this.externalServices && this.externalServices[rservice]){
+			delete this.externalServices[rservice];
+		}
+	},
+	
+	load : function(){
+		if (ServiceNode.base.load){
+			return ServiceNode.base.load.apply(this, arguments);
+		}		
+		Frame.Services.add(this);
+		return true;
+	},
+	
+	unload : function(){	
+		Frame.Services.del(this);
+		if (ServiceNode.base.unload){
+			return ServiceNode.base.unload.apply(this, arguments);
+		}		
 		return true;
 	},
 
-	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
-	//If you return 'false', a "callback" will not be processed
-	load : function(){
-		if (this.module && typeof(this.module.Load) == "function"){
-			try{
-				this.module.Load();
-			}
-			catch (e){
-				this.logger.error(e);
-				this.State = Node.States.EXCEPTION;
-				return false;
-			}	
-		}
-		if (ServiceNode.base.load){
-			return ServiceNode.base.load.apply(this, arguments);
-		}
-		return true;
+	RequireService : function(selector){
+		var service = Frame.useService(selector);
+		if (service){
+			this.requiredServices.push(service);
+		}		
+		return service;
 	},
 	
-	unload : function(){
-		if (this.module && typeof(this.module.Unload) == "function"){
-			try{
-				this.module.Unload();
-			}
-			catch (e){
-				this.logger.error(e);
-				this.State = Node.States.EXCEPTION;
-				return false;
-			}	
+	ConfigureExternalService : function(service, config, rservice){
+		var service = Frame.Services.get(service);
+		if (service){
+			return service.configureExternal(config, rservice.id);
 		}
-		if (ServiceNode.base.unload){
-			return ServiceNode.base.unload.apply(this, arguments);
+		else{
+			this.error("Required service " + service + " tried to configure, but not found!");
 		}
-		return true;
+		return null;
 	},
 	
-	start : function(){
-		if (this.module && typeof(this.module.Start) == "function"){
-			try{
-				this.module.Start();
-			}
-			catch (e){
-				this.logger.error(e);
-				this.State = Node.States.EXCEPTION;
-				return false;
-			}	
+	UnConfigureExternalService : function(service, rservice){
+		var service = Frame.Services.get(service);
+		if (service){
+			return service.unconfigureExternal(rservice.id);
 		}
-		return true;
-	},
-	
-	stop : function(callback){
-		if (this.module && typeof(this.module.Stop) == "function"){
-			try{
-				this.module.Stop();
-			}
-			catch (e){
-				this.logger.error(e);
-				this.State = Node.States.EXCEPTION;
-				return false;
-			}	
+		else{
+			this.error("Required service " + service + " tried to unconfigure, but not found!");
 		}
-		return true;
-	},
-	
-	sleep : function(callback){
-		if (this.module && typeof(this.module.Sleep) == "function"){
-			try{
-				return this.module.Sleep();
-			}
-			catch (e){
-				this.logger.error(e);
-				this.State = Node.States.EXCEPTION;
-				return false;
-			}	
-		}
-		return false;
+		return null;
 	},
 });
+
+function ServiceManager(){
+	
+};
+
+ServiceManager.prototype = {
+	
+}
 
 module.exports = ServiceNode;

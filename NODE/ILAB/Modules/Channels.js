@@ -208,52 +208,70 @@ Channel.prototype.onSubscribe = Channel.prototype.tunnelTo = function(route, cal
 	return this.on(route, callback);
 };
 
-Channel.prototype.emit = function(route){
+Channel.prototype.emit = Channel.prototype.send = function(route){
+	route = this.get.apply(this, arguments);
+	if (route) return route.send();
+	return null;
+}
+
+Channel.prototype.get = function(route){
 	var route = Channel.ParsePath(route);
 	if (!route) return;
 	if (route.nodes.length == 0) return null;
 	route.id = (Math.random() + "").replace("0.", "");
-	var root = this.routes;
 	route.callplan = [];
-	var count = this._sendMessage(root, route, 0, arguments);
-	var results = [];
-	var handlers = [];
-	if (count == 0) route.completed = true;
-	var channel = this;
-	function onCompleteFunction(){
-		route.completed = true;
-		for (var i = 0; i < handlers.length; i++){
-			handlers[i].call(channel, route, results);
+	route.channel = this;
+	route.results = [];
+	route._endHandlers = [];
+	route._handlersCount = 0;
+	
+	route._onCompleteFunction = function(){
+		this.completed = true;
+		for (var i = 0; i < this._endHandlers.length; i++){
+			this._endHandlers[i].call(this.channel, this, this.results);
 		}		
 	}
-	resultObj = {
-		results : results,
-		end : function(callback){
-			if (count > 0){
-				handlers.push(callback);
+	route.end = function(callback){
+		var route = this;
+		if (callback){
+			if (this._handlersCount > 0){
+				this._endHandlers.push(callback);
 			}
 			else{
 				setTimeout(function(){
-					callback.call(channel, route, results);
+					callback.call(channel, route, route.results);
 				},2);
 			}
 		}
 	};
-	route.stop = function(){
-		route._waterfallFunc = null;
-		onCompleteFunction();
-	}
-	route._waterfallFunc = function(route, result){
-		results.push(result);
-		count--;
-		if (count <= 0){
-			onCompleteFunction();
+	route.send = function(callback){
+		if (callback){
+			this.end(callback);
+		}
+		for (var i = this.callplan.length - 1; i >= 0; i--){
+			this.callplan[i]();
 		}
 	};
-	for (var i = route.callplan.length - 1; i >= 0; i--){
-		route.callplan[i]();
+	
+	route.abort = function(){
+		this._addResult = null;
 	}
-	return resultObj;
+	route.stop = function(){
+		this._addResult = null;
+		this._onCompleteFunction();
+	}
+	route._addResult = function(result){
+		this.results.push(result);
+		this._handlersCount--;
+		if (this._handlersCount <= 0){
+			this._onCompleteFunction();
+		}
+	};	
+	
+	route._handlersCount = this._sendMessage(this.routes, route, 0, arguments);
+	if (route._handlersCount == 0) route.completed = true;
+		
+	return route;
 }; 
 		
 Channel.prototype._addRouteHandler = function(root, callback){
@@ -425,16 +443,11 @@ Channel.prototype._callHandlerAsync = function(route, callback, param, args){
 	function callCallback(){
 		if (channel == global.Channels){
 			var result = callback.call(route, param, param1, param2, param3, param4, param5);
-			if (route._results){
-				route._results.push(result);
-			}
-			if (route._waterfallFunc){
-				route._waterfallFunc.call(channel, route, result);
-			}
 		}
 		else{
 			var result = callback.call(channel, param, param1, param2, param3, param4, param5);
 		}
+		route._addResult(result);
 	}
 	if (route.callplan){
 		route.callplan.push(function(){

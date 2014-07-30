@@ -63,21 +63,26 @@ Inherit(FrameNode, ManagedNode, {
 	load : function(){
 		try{
 			var self = this;
+			debugger;
+			if (FrameNode.base.load){
+				FrameNode.base.load.apply(this, arguments);
+			}		
 			
-			if (!this.lconfig.nodes) this.lconfig.nodes = {};
-			this.ChildNodes = {};
-			var citems = this.lconfig.nodes;
+			if (this.lconfig.childnodes) this.ChildNodes = this.lconfig.childnodes;
+			else this.ChildNodes = {};
+			var citems = this.ChildNodes;
 			var nodes = {};
 			
 			for (var nodeId in citems){
 				var item = citems[nodeId];
-				var selector = Selector.parse(nodeId);
+				var selector = new Selector(nodeId);
 				if (!selector.id) selector.id = "node" + parseInt(Math.random()*1000);
 				if (!item.id) item.id = selector.id;
 				if (!item.type) item.type = selector.type;
 				var node = Frame.CreateNode(item, 'base', this.logger);
 				if (node){
-					node.selector = _selector;
+					node.selector = selector;
+					node.currentConfig = item;
 					nodes[node.id] = node;
 					node.on('state', function(state, stateOld){
 						if (this.logger){
@@ -87,26 +92,28 @@ Inherit(FrameNode, ManagedNode, {
 							self.logger.trace("{0}:%bright;%white;{1} %normal;{2} => {3}", this.type, this.id, Node.Statuses[stateOld],Node.Statuses[state]);
 						}
 					});
-					if (item.State == "working"){
-						this.logger.debug("%green;{0}:%normal;{1} {2}", node.type, item.id, item.File ? item.File : "");
-					}
-					else
-					{
-						this.logger.debug("%yellow;{0}:%normal;{1} {2}", node.type, item.id, item.File ? item.File : "");	
-					}
 				}
 			}
 			
 			for (var nodeId in nodes){			
 				var node = nodes[nodeId];
-				var item = citems[nodeId];			
-				node.originalId = nodeId;
+				var item = node.currentConfig;			
 				try{
 					node.Init();
 					node.Configure(item);
 					if (node.defaultState === undefined){
 						node.defaultState = Node.States.LOADED;
-					};
+						this.logger.debug("%grey;{0}#%normal;{1}:{3} {2}", node.type, node.id, item.File ? item.File : "", Node.Statuses[node.defaultState]);
+					}
+					else
+					{					
+						if (node.defaultState == Node.States.WORKING){					
+							this.logger.debug("%green;{0}#%normal;{1}:{3} {2}", node.type, node.id, item.File ? item.File : "", Node.Statuses[node.defaultState]);	
+						}
+						else{
+							this.logger.debug("%yellow;{0}#%normal;{1}:{3} {2}", node.type, node.id, item.File ? item.File : "", Node.Statuses[node.defaultState]);	
+						}
+					}					
 				}
 				catch(err){
 					this.logger.error(err);

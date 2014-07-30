@@ -12,7 +12,6 @@ Frame.ServicesPath = Frame.ilabPath + "\\Services\\";
 Frame.NodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
 Frame.Nodes = {};
 Frame.Modules = [];
-Frame.Services = {};
 
 global.useNodeType = Frame.useNodeType = function(path){
 	if (path.indexOf(".js") != path.length - 3){
@@ -33,97 +32,80 @@ global.useSystem = Frame.useSystem = function(path){
 	return require(Path.resolve(Frame.NodeModulesPath + path));
 };
 
+Frame.knownServices = new (useModule("Storage.js"))();
+
 global.useService = Frame.useService = function(path, config){
-	var service = Frame.Services[path];
-	if (service) return service;
-	var serviceNodeType = Frame.NodesByTypes["service"];
-	if (!serviceNodeType) throw "Service node not available!";	
-	service = Frame.Nodes[path];
-	if (service){
-		if (!(service instanceof serviceNodeType)) throw "Using incorrect " + path + " node as service!";	
-		Frame.Services[path] = service;
-		if (config) service.configure(config);
-		return service;
+	var service = Frame.knownServices.get(path);
+	if (!service){
+		
 	}
-	if (path.indexOf(".js") != path.length - 3){
-	  path += ".js";
-	}
-	if (!config) config = {};
-	config.Service = path;
-	service = Frame.CreateNode(config, serviceNodeType, Frame.Logger);
-	Frame.Services[path] = service;
 	return service;
 };	
 
-Frame.Services = {};
-
 Frame.CreateNode = function(config, defaultNode, logger){
 	if (!config) config = { Type : defaultNode };
-	nodePath = config.Type !== undefined ? config.Type : config.type;
+	nodePath = config.Node != null ? config.Node : config.node;
 	var node = null;
 	if (nodePath) {
-		var nType = Frame.NodesByTypes[nodePath];
-		if (nType){
-			node = new nType(this, config.id);
-		}
-	}		
-	else{
-		nodePath = config.Node;
-		if (!nodePath) nodePath = config.node;
 		function SearchNodeParent(checkedNode){
 			if (!checkedNode) return false;
-			if (checkedNode.prototype == Node) return true;
-			else return SearchNodeParent(checkedNode.prototype);
+			if (!checkedNode.super_) return false;
+			if (checkedNode.super_ == Node) return true;
+			else return SearchNodeParent(checkedNode.super_);
 		}
-		if (nodePath) {
-			nodePath = Path.resolve(nodePath);
-			if (fs.existsSync(nodePath)){
-				var node = Frame.NodesByTypes[nodePath] = require(nodePath);
-				if (!SearchNodeParent(node)){
-					if (logger){
-						logger.error("Node " + nodePath + " is not node instance!");
-					}
-					else{
-						throw "Node " + nodePath + " is not node instance!";	
-					}							
-					return null;
-				}
-			}
-			else{
+		nodePath = Path.resolve(nodePath);
+		if (fs.existsSync(nodePath)){
+			var node = Frame.NodesByTypes[nodePath] = require(nodePath);
+			if (!SearchNodeParent(node)){
 				if (logger){
-					logger.error("Node " + nodePath + " load error!");
+					logger.error("Node " + nodePath + " is not node instance!");
 				}
 				else{
-					throw "Node " + nodePath + " load error!";	
-				}
+					throw "Node " + nodePath + " is not node instance!";	
+				}							
 				return null;
 			}
 		}
-		if (node){				
-			if (typeof(node) == "function"){
-				node = new node(this, config.id);
+		else{
+			if (logger){
+				logger.error("Node " + nodePath + " create error!");
 			}
 			else{
-				if (logger){
-					logger.error("Node " + nodePath + " is not a function!");
-				}
-				else{
-					throw "Node " + nodePath + " is not a function!";	
-				}
+				throw "Node " + nodePath + " create error!";	
 			}
+			return null;
+		}
+	}		
+	else{
+		nodePath = config.Type !== undefined ? config.Type : config.type;
+		if (nodePath){
+			node = Frame.NodesByTypes[nodePath];
+		}
+	}	
+	if (node){				
+		if (typeof(node) == "function"){
+			node = new node(this, config.id);
 		}
 		else{
-			if (defaultNode) {
-				if (typeof defaultNode == "string"){
-					config.Type = defaultNode;
-					return Frame.CreateNode(config, defaultNode, logger);
-				}
-				if (defaultNode && typeof defaultNode == "object"){
-					node = new defaultNode(this, config.id);
-				}
+			if (logger){
+				logger.error("Node " + nodePath + " is not a function!");
 			}
-		}		
+			else{
+				throw "Node " + nodePath + " is not a function!";	
+			}
+		}
 	}
+	else{
+		if (defaultNode) {
+			if (typeof defaultNode == "string"){
+				config.Type = defaultNode;
+				return Frame.CreateNode(config, defaultNode, logger);
+			}
+			if (defaultNode && typeof defaultNode == "object"){
+				node = new defaultNode(this, config.id);
+			}
+		}
+	}	
 	if (node){				
 		Frame.Nodes[node.id] = node;
 		return node;
@@ -164,7 +146,10 @@ Frame._initFrame = function(){
 		}
 		return null;
 	}
-	config = JSON.parse(config);
+	
+	config = _parseConfig(config, "env.js");
+	
+	if (config.cwd){ process.chdir(config.cwd) };
 
 	var logger = new Logger(Frame.isChild ? process.env.parentNode: null, !Frame.isChild);
 

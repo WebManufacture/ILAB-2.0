@@ -10,6 +10,7 @@ var Logger = useModule('Logger.js');
 useModule('Async.js');
 
 function StaticFilesService(parentNode){
+	StaticFilesService.super_.apply(this, arguments);
 	this.ProcessRequest = CreateClosure(this._ProcessRequest, this);
 	this.ProcessContext = CreateClosure(this._ProcessContext, this);
 };
@@ -27,11 +28,11 @@ StaticFilesService.MimeTypes = {
 	ttf : "font/truetype; charset=utf-8"
 };
 	
-StaticFilesService.prototype = {
-	loading: function(node){
-		this.logger = node.logger;
-		this.config = node.config;
-		this.basepath = node.basepath;
+Inherit(StaticFilesService, FilesServiceNode, {
+	load : function(){
+		if (StaticFilesService.base.load){
+			StaticFilesService.base.load.apply(this, arguments);
+		}		
 		this.FilesRouter = Files(this.config, this, this.logger);
 		this.LastFiles = {};
 		this.LastTypes = {};
@@ -67,7 +68,7 @@ StaticFilesService.prototype = {
 		this.mapStart = new Date();
 		this.filesCounter = 0;
 		this._buildFSmap(this.Map, this.basepath, function(){
-			node.State = Node.States.LOADED;
+			serv.State = Node.States.LOADED;
 		});
 		this.logger.debug("FS Watching " + this.basepath);
 		this.watcher = fs.watch(serv.basepath, {}, function(event, fname){
@@ -94,7 +95,7 @@ StaticFilesService.prototype = {
 		return false;
 	},
 	
-	starting : function(node){
+	start : function(){
 		var serv = this;
 		if (this.HTTPServer && this.HTTPport){
 			this.HTTPServer.listen(this.HTTPport, function(){
@@ -109,7 +110,7 @@ StaticFilesService.prototype = {
 		return false;
 	},
 
-	stopping : function(node){
+	stop : function(){
 		var serv = this;
 		if (this.HTTPServer){
 			this.HTTPServer.close(function(){
@@ -123,7 +124,7 @@ StaticFilesService.prototype = {
 		return false;
 	},
 	
-	unloading : function(){
+	unload : function(){
 		if (this.HTTPServer){
 			if (this.HTTPServerWorking){
 				this.HTTPServer.close();
@@ -483,7 +484,7 @@ StaticFilesService.prototype = {
 			});
 		});
 	}
-};
+});
 
 module.exports = StaticFilesService;
 

@@ -9,24 +9,38 @@ useModule("Utils.js");
 var logger = useModule("Logger.js");
 useModule("Channels.js");
 useModule("Router.js");
-useNodeType("ManagedNode.js");
+useNodeType("service");
 
 function RoutingService(parentNode, config){
-	
+	ServiceNode.super_.apply(this, arguments);
+	this.type = RoutingService.Type;
 };
 
-RoutingService.prototype = {
-	loading : function(node){
-		this.logger = node.logger;
-		var config = this.config = node.config;
-		var routes = config.Routes;
-		if (!routes) routes = config.routes;
-		if (!routes) routes = {};
+RoutingService.Type = "RoutingService";
+
+Inherit(RoutingService, ServiceNode, {
+	configure : function(config){
+		if (RoutingService.base.configure){
+			return RoutingService.base.configure.apply(this, arguments);
+		}
+		this.routes = {};
+		if (this.lconfig.routes) {
+			this.routes = this.lconfig.routes;
+		}
 		this.portRouters = {};
-		this.defaultPort = config.DefaultPort;
+		this.defaultPort = this.lconfig.defaultport;
 		if (!this.defaultPort) this.defaultPort = 80;
 		if (config.HttpHeaders) this.advancedHttpHeaders = config.HttpHeaders;		
 		if (config.ServiceUrl) this.serviceUrl = config.ServiceUrl;		
+	},
+	
+	
+	load : function(node){
+		if (RoutingService.base.load){
+			return RoutingService.base.load.apply(this, arguments);
+		}
+		var config = this.config;
+		var routes = this.routes;
 		for (var path in routes){
 			var dest = routes[path];
 			if (!dest) continue;
@@ -57,10 +71,10 @@ RoutingService.prototype = {
 				}
 			}
 		}		
-		node.State = Node.States.LOADED;
+		return true;
 	},
 	
-	starting : function(node){
+	start : function(node){
 		for (var port in this.portRouters){
 			var config = this.portRouters[port];
 			config.Start();
@@ -68,7 +82,15 @@ RoutingService.prototype = {
 		return true;
 	},
 	
-	unloading : function(node){
+	stop : function(node){
+		for (var port in this.portRouters){
+			var config = this.portRouters[port];
+			config.Stop();
+		}
+		return true;
+	},
+	
+	unload : function(node){
 		var self = this;
 		var lf = new Async.Waterfall(function(){
 			self.State = Node.States.UNLOADED;
@@ -81,7 +103,7 @@ RoutingService.prototype = {
 		lf.check();
 		return false;
 	},
-};
+});
 
 
 RoutingService.CreateMap = function(routerMapNode){
