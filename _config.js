@@ -1,15 +1,16 @@
 {
 	Ver : "0.3.2", 
-	LogLevel: "info",
+	LogLevel: "debug",
 	Modules : ["ilab_nodes_connectivity.js"],
 	Type: "FrameNode", 
 	State : "working",
 	ChildNodes : {
-		"service#Channels:working" : {
-			Service : "./ILAB/Services/ChannelService.js", 
+		ChannelsService : {
+			State : "working",
+			Node : "./ILAB/Services/ChannelService.js", 
 		},
-		"service#Routing:working" : {
-			Service: "./ILAB/Services/RoutingService.js",
+		"RoutingService#Routing:working" : {
+			Node: "./ILAB/Services/RoutingService.js",
 			Path : "" ,
 			DefaultPort : 1000,
 			ChannelsTerminator : false,
@@ -38,37 +39,31 @@
 				"channels://uart.output" : "TcpEmulator/UartSender",
 				"channels://uart.input" : "TcpEmulator/UartSender"
 			},
-			Requires : {
-				ChannelsService : "#Channels"
-			}
 		},
-		Files : {
-			Type: "Service", 
-			Service : "./ILAB/Services/FilesService.js", 
+		"FilesService#Files" : {
+			Node : "./ILAB/Services/FilesService.js", 
 			Paths : {
 				BasePath : "./ILAB"
 			},
 			State:"working", 
 			Services: {
-				"#Channel" : "Files"
+				ChannelsService : {
+					Alias : "Files"
+				}
 			}
 		},		
-		Static : {
-			Type: "service", 
-			Service : "./ILAB/Services/StaticService.js", 
+		"StaticService#Static" : {
+			Node : "./ILAB/Services/StaticService.js", 
 			Paths : {
 				BasePath : "./ILAB"
 			},
 			State:"working", 
 			Channel: "Sites",
-			Requires : {
-				FilesService : "#Files",
-				RoutingService : "#Routing"
-			}
+			Requires : ["RoutingService#Routing", "ChannelsService"],
 		},
-		"Service#Admin:working" : {
-			Service : "./ILAB/Services/ConfigService/AdminService.js", 
-			State:"working", 
+		"AdminService#Admin:working" : {
+			Node : "./ILAB/Services/ConfigService/AdminService.js", 
+			State : "working", 
 			Paths : {
 				BasePath : "./ILAB/Services/ConfigService",
 				ConfigPage: "Config New.htm",
@@ -85,30 +80,20 @@
 				}
 			}
 		},
-		KLab : {
-			Type: "service", 
-			Service : "./KLAB/KLabService.js", 
+		"KLabService#KLab:initialized" : {
+			Node : "./KLAB/KLabService.js", 
 			Paths : {
 				BasePath : "./KLAB"
-			},
-			State:"initialized", 
-			Channel: "Sites",
-			Requires : {
-				StaticService : "Static",
-				RoutingService : "Routing"
-			}
+			},			
+			Requires : ["StaticService#Static", "RoutingService#Routing"],
 		},
-		"Service#Secure:initialized" : {
-			Service : "./ILAB/Services/SecureServer.js", 
-			Channel: "Secure",
-			Requires : {
-				StorageService : "Storage",
-				RoutingService : "Routing"
-			}
+		"SecurityService#Secure:initialized" : {
+			Node : "./ILAB/Services/SecureServer.js", 
+			Requires : ["StorageService#Storage", "RoutingService#Routing"],
 			Services : {
 				StorageService : {
 					Storage : "./ILAB/Storage/AuthStorage.json"
-				}
+				},
 				RoutingService : {
 					Routes : {
 						"http://security.web-manufacture.net" : "Secure"
@@ -116,9 +101,8 @@
 				}
 			}
 		},
-		"Service#Storage:initialized" : {
-			Service : "./ILAB/Services/StorageServer.js", 
-			Channel: "Storage",
+		"StorageService#Storage:initialized" : {
+			Node : "./ILAB/Services/StorageServer.js", 
 			Paths : {
 				BasePath: "./ILAB/Storage",
 				TempPath: "./ILAB/Storage/Temp",

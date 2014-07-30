@@ -1,14 +1,30 @@
-Selector = function(type, object){
-	this.type = type;
-	this.object = object;
-	this.source = type + object;
-	this.identify(type, object);
+Selector = function(str){
+	this.source = "";
+	if (str && typeof str == "string") {
+		var item;
+		var regex = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
+		while((item = regex.exec(str)) != null){
+			if (item[1] == ""){
+				this.Add(item[2], item[3]);
+			}
+			else{
+				if (item[1] == " "){
+					this.Follow(new Selector(str.substr(item.index + 1)));
+					break;
+				}
+				if (item[1] == "/" || item[1] == ">"){
+					this.Next(new Selector(str.substr(item.index + 1)));
+					break;
+				}
+			}
+		}
+	}
 }
 
 Selector.prototype = {
 	identify : function(type, object){
 		if (type == "" && !this.item){
-			this.item = object;
+			this.type = object;
 		}
 		if (type == "#" && !this.id){
 			this.id = object;
@@ -36,13 +52,18 @@ Selector.prototype = {
 					this.classes.push(object);
 					this.tags += " " + object;
 				}
-				this.tags = this.tags.replace(" ", '');
+				if (this.tags.indexOf(" ") == 0){
+					this.tags = this.tags.replace(" ", '');
+				}
 			}
 		}
 	},
 	
 	Add : function(type, object){
-		if (!type) return;
+		if (typeof type != "string") return;
+		if (!object && type.length >= 1){
+			object = type.substr(1);
+		}
 		this.source += type + object;
 		this.identify(type, object);
 	},
@@ -58,13 +79,15 @@ Selector.prototype = {
 	}
 }
 
+Selector.Regexp = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
+
 Selector.parse = function(txt){
 	if (txt){
-		var regexp = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
 		var item;
 		var items = [];
 		var currentSelector;
-		while((item = regexp.exec(txt)) != null){
+		var regex = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
+		while((item = regex.exec(txt)) != null){
 			if (currentSelector){
 				if (item[1] == ""){
 					currentSelector.Add(item[2], item[3]);
@@ -81,7 +104,8 @@ Selector.parse = function(txt){
 				}
 			}
 			else{
-				currentSelector = new Selector(item[2], item[3]);
+				currentSelector = new Selector();
+				currentSelector.Add(item[2], item[3]);
 				items.push(currentSelector);
 			}
 		}
@@ -89,10 +113,9 @@ Selector.parse = function(txt){
 	}	
 }
 
-Selector.first = function(txt){
+Selector.first = Selector.single = function(txt){
 	if (txt){
-		var items = Selector.parse(txt);
-		return items[0];
+		return new Selector(txt);
 	}	
 }
 
