@@ -84,7 +84,7 @@
 			Node : "./KLAB/KLabService.js", 
 			Paths : {
 				BasePath : "./KLAB"
-			},			
+			},		
 			Requires : ["StaticService#Static", "RoutingService#Routing"],
 		},
 		"SecurityService#Secure:initialized" : {
@@ -103,6 +103,7 @@
 		},
 		"StorageService#Storage:initialized" : {
 			Node : "./ILAB/Services/StorageServer.js", 
+			Channel : "Storage",
 			Paths : {
 				BasePath: "./ILAB/Storage",
 				TempPath: "./ILAB/Storage/Temp",
