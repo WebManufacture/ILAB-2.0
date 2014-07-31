@@ -1,3 +1,34 @@
+if (this.window){
+	require = function(){
+		return { 
+			resolve : function(){},
+			EventEmitter : Channel
+		};
+	}
+
+	log = function(){
+		var m = "";
+		for (var i = 0; i < arguments.length; i++){
+			m += arguments[i] + " ";
+		}
+		DOM.add(DOM.div(".log", m));
+	}
+
+	logJSON = function(){
+		var m = "";
+		for (var i = 0; i < arguments.length; i++){
+			var item = arguments[i];
+			if (typeof(item) == "object") item = JSON.stringify(item);
+			m += item + " ";
+		}
+		DOM.add(DOM.div(".log", m));
+	}
+
+	global = window;
+
+	module = {};
+}
+
 function Channel(route){
 	this.name = route;
 	this.routes = { $path : "/" };
@@ -22,6 +53,11 @@ Channel.RouteNode = function(route){
 				this.type = route[0].toLowerCase();
 			}
 			route.shift();
+			if (this.type.indexOf("#") >= 0){
+				this.id = this.type.substr(this.type.indexOf("#"));
+				this.type = this.type.substr(0, this.type.indexOf("#"));
+				this.components.push(this.id);
+			}
 			this.components.push(this.type);
 			var i = 0;
 			while (i < route.length){

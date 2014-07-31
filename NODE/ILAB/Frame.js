@@ -32,16 +32,6 @@ global.useSystem = Frame.useSystem = function(path){
 	return require(Path.resolve(Frame.NodeModulesPath + path));
 };
 
-Frame.knownServices = new (useModule("Storage.js"))();
-
-global.useService = Frame.useService = function(path, config){
-	var service = Frame.knownServices.get(path);
-	if (!service){
-		
-	}
-	return service;
-};	
-
 Frame.CreateNode = function(config, defaultNode, logger){
 	if (!config) config = { Type : defaultNode };
 	nodePath = config.Node != null ? config.Node : config.node;

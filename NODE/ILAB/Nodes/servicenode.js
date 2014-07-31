@@ -5,7 +5,6 @@ useNodeType("managednode.js");
 useModule("logger.js");
 var Storage = useModule("Storage.js");
 
-
 function ServiceNode (parentNode, item){
 	ServiceNode.super_.apply(this, arguments);
 	this.type = global.ServiceNode.Type;
@@ -19,6 +18,7 @@ Inherit(ServiceNode, ManagedNode, {
 	init : function(){
 		this.configured = false;
 		if (!Frame.Services) Frame.Services = new Storage();
+		this.proxy = Frame.Services.add(new (useModule("ServiceProxy.js"))(this.selector));
 		this.requiredServices = [];
 		var result = true;
 		if (ServiceNode.base.init){
@@ -33,6 +33,7 @@ Inherit(ServiceNode, ManagedNode, {
 		if (ServiceNode.base.configure){
 			return ServiceNode.base.configure.apply(this, arguments);
 		}
+		if (this.proxy) this.proxy.configure(this.lconfig);
 		if (this.lconfig.requires){
 			for (var i = 0; i < this.lconfig.requires.length; i++){
 				var selector = this.lconfig.requires[i];
@@ -42,16 +43,6 @@ Inherit(ServiceNode, ManagedNode, {
 		return true;
 	},
 	
-	configureExternal : function(config, rservice){
-		if (!this.externalServices) this.externalServices = {};
-		this.externalServices[rservice] = config;
-	},
-	
-	unconfigureExternal : function(rservice){
-		if (this.externalServices && this.externalServices[rservice]){
-			delete this.externalServices[rservice];
-		}
-	},
 	
 	load : function(){
 		if (ServiceNode.base.load){
@@ -75,6 +66,17 @@ Inherit(ServiceNode, ManagedNode, {
 			this.requiredServices.push(service);
 		}		
 		return service;
+	},
+	
+	configureExternal : function(config, rservice){
+		if (!this.externalServices) this.externalServices = {};
+		this.externalServices[rservice] = config;
+	},
+	
+	unconfigureExternal : function(rservice){
+		if (this.externalServices && this.externalServices[rservice]){
+			delete this.externalServices[rservice];
+		}
 	},
 	
 	ConfigureExternalService : function(service, config, rservice){
