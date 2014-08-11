@@ -5,7 +5,7 @@ function Logger(ChannelPrefix, useConsole, level){
 		this.level = level;
 	}
 	else{
-		if (Frame && Frame.LogLevel){
+		if ((typeof(Frame) !== "undefined") && Frame && Frame.LogLevel){
 			this.level = Frame.LogLevel;
 		}
 		else{

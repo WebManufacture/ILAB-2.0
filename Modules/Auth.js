@@ -6,7 +6,7 @@ var EventEmitter = require("events").EventEmitter;
 useModule("Logger.js");
 var Storage = useModule("Storage.js");
 
-Auth = function(config){
+function Auth(config){
 	this.storage = new Storage(config.Storage);
 	var auth = this;
 	this.Reload = function(){
