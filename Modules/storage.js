@@ -58,8 +58,8 @@ StorageLayer.prototype = {
 	
 		
 	_filterByClasses: function(selector, items){
+		if (!items) return [];
 		if (!selector.tags) return items;
-		if (!items) return null;
 		var arr = [];
 		for (var i = 0; i < items.length; i++){
 			if (selector.is(items[i])) arr.push(items[i]);
@@ -119,18 +119,7 @@ StorageLayer.prototype = {
 		if (typeof(selector) == 'string') selector = new Selector(selector);
 		return this._queryInternal(selector);
 	},
-	
-	createSubLayer : function(){
-		var childs = [];
-		/*for (var cl = 0; cl < this.objects.length; cl++){
-			var obj = this.objects[cl];	
-			if (obj.childs && obj.childs.length > 0){
-				obj._internalId = cl;
-				childs.concat(obj.childs);
-			}
-		}*/	
-		return childs;
-	},
+		
 	
 	resolveExternalLinks : function(resolver){
 		if (typeof resolver == "function"){
@@ -170,37 +159,43 @@ StorageLayer.prototype = {
 
 	del : function(obj){
 		if (obj){
-			if (obj.id && this.indexes[obj.id]){
-				delete this.indexes[obj.id];
+			var result = false;
+			for (var i = 0; i < this.objects.length; i++){
+				if (this.objects[i] == obj){
+					this.objects.splice(i, 1);
+					result = true;
+					break;
+				};
 			}
-			if (obj.type && this.types[obj.type]){
-				var items = this.types[obj.type];
-				for (var i = 0; i < items.length; i++){
-					if (items[i] == obj){
-						items.splice(i, 1);
-						break;
-					};
+			if (result){
+				if (obj.id && this.indexes[obj.id]){
+					delete this.indexes[obj.id];
 				}
-			}
-			if (obj.classes){
-				for (var cl = 0; cl < obj.classes.length; cl++){
-					var tag = obj.classes[cl];	
-					var items = this.classes[tag];
+				if (obj.type && this.types[obj.type]){
+					var items = this.types[obj.type];
 					for (var i = 0; i < items.length; i++){
 						if (items[i] == obj){
 							items.splice(i, 1);
 							break;
 						};
 					}
-				}				
+				}
+				if (obj.classes){
+					for (var cl = 0; cl < obj.classes.length; cl++){
+						var tag = obj.classes[cl];	
+						var items = this.classes[tag];
+						for (var i = 0; i < items.length; i++){
+							if (items[i] == obj){
+								items.splice(i, 1);
+								break;
+							};
+						}
+					}				
+				}
 			}
-			for (var i = 0; i < this.objects.length; i++){
-				if (this.objects[i] == obj){
-					this.objects.splice(i, 1);
-					break;
-				};
-			}
+			return result;
 		}
+		return false;
 	}
 };
 
@@ -271,7 +266,7 @@ Inherit(Storage, EventEmitter, {
 	    this.layers = [];
 		while (objects && objects.length > 0){
 			var layer = this.layers.push(new StorageLayer(objects));
-			objects = layer.getSubLayerItems();			
+			//objects = layer.getSubLayerItems();			
 		}			
 	},
 	
@@ -295,30 +290,85 @@ Inherit(Storage, EventEmitter, {
 	},
 	
 	all : function(selector){
-		if (!selector) selector = "*";
+		if (this.layers.length == 0) return [];
+		if (!selector) selector = "*";		
 		if (typeof(selector) == 'string') selector = new Selector(selector);
-		var result = [];
-		for (var i = 0; i < this.layers.length; i++){
-			var all = this.layers[i].all(selector);
-			if (all && all.length > 0){
-				result = result.concat(all)
+		var items = this.layers[0].all(selector);
+		while (items.length > 0 && (selector.follow || selector.next)){
+			var result = [];
+			for (var i = 0; i < items.length; i++){
+				var item = items[i];
+				if (item.childs && item.childs.length > 0){
+					result = result.concat(item.childs);
+				}
+			}
+			var layer = new StorageLayer(result);
+			if (selector.next){
+				items = layer.all(selector.next);
+				selector = selector.next;
+			}
+			if (selector.follow){
+				var temp = layer.all(selector.follow);
+				if (temp.length == 0){
+					items = result;
+				}
+				else{
+					items = temp;
+					selector = selector.follow;
+				}
 			}
 		}
-		return result;
+		/*for (var i = 0; i < this.layers.length; i++){
+			var all = this.layers[i].all(selector);
+			if (all && all.length > 0){
+				result = result.concat(all);
+			}
+		}*/
+		return items;
 	},
 
 	get : function(selector){
+		if (this.layers.length == 0) return [];
+		if (!selector) selector = "*";
 		if (typeof(selector) == 'string') selector = Selector.first(selector);
-		for (var i = 0; i < this.layers.length; i++){
+		var items = this.layers[0].all(selector);
+		while (items.length > 0 && (selector.follow || selector.next)){
+			var result = [];
+			for (var i = 0; i < items.length; i++){
+				var item = items[i];
+				if (item.childs && item.childs.length > 0){
+					result = result.concat(item.childs);
+				}
+			}
+			var layer = new StorageLayer(result);
+			if (selector.next){
+				items = layer.all(selector.next);
+				selector = selector.next;
+			}
+			if (selector.follow){
+				var temp = layer.all(selector.follow);
+				if (temp.length == 0){
+					items = result;
+				}
+				else{
+					items = temp;
+					selector = selector.follow;
+				}
+			}
+		}
+		/*for (var i = 0; i < this.layers.length; i++){
 			var obj = this.layers[i].get(selector);
 			if (obj) return obj;
-		}
-		return null;
+		}*/
+		return items[0];
 	},
 	
 	_formatObject : function(selector, data){
-		if (typeof(selector) == 'string') selector = Selector.first(selector);
+		if (typeof(selector) == 'string') selector = new Selector(selector);
 		if (!data) data = {};
+		else if (typeof (data) == 'string'){
+			data = this._formatObject(new Selector(data), {});
+		}
 		if (selector.id && !data.id){
 			data.id = selector.id;
 		}
@@ -334,12 +384,23 @@ Inherit(Storage, EventEmitter, {
 		if (selector.type && !data.type){
 			data.type = selector.type;
 		}
+		if (selector.next){
+			if (!data.childs) data.childs = [];
+			data.childs.push(this._formatObject(selector.next));
+		}
+		/*if (selector.follow){
+			if (!data.childs) data.childs = [];
+			while(selector.follow){
+				data.childs.push(this._formatObject(selector.follow));
+			}
+		}*/
 		//if (!selector.id && data.id) selector.id = data.id;
 		//if (!selector.type && data.type) selector.type = data.type;
 		return data;
 	},
 
 	set : function(selector, data){
+		if (!data) data = selector;
 		data = this._formatObject(selector, data);
 		if (data.id){
 			if (this.indexes[data.id]){
@@ -356,12 +417,33 @@ Inherit(Storage, EventEmitter, {
 		return null;
 	},
 
+	checkChilds : function(data){
+		if (data.childs && data.childs.length){
+			for (var i = 0; i < data.childs.length; i++){
+				var child = data.childs[i];	
+				if (typeof (child) == "string") {
+					data.childs[i] = this._formatObject(child);
+				}
+				else {
+					if (child.childs) this.checkChilds(child);
+				}
+			}
+		}
+	},
+	
 	add : function(selector, data){
-		var obj = this._formatObject(selector, data);
+		if (!selector && !data) return;
 		if (this.layers.length == 0) this.layers.push(new StorageLayer());
-		this.layers[0].add(obj);
+		if (!data && typeof(selector) == "object"){
+			data = selector;	
+		}
+		else{
+			data = this._formatObject(selector, data);
+		}
+		this.checkChilds(data);		
+		this.layers[0].add(data);
 		this._save();
-		return obj;
+		return data;
 	},
 
 	del : function(selector){
@@ -369,7 +451,7 @@ Inherit(Storage, EventEmitter, {
 		var count = 0;
 		for (var i = this.layers.length-1; i >= 0; i--){
 			var all = this.layers[i].all(selector);
-			for (var oi = this.layers.length-1; oi >= 0; oi--){
+			for (var oi = all.length-1; oi >= 0; oi--){
 				if (this.layers[i].del(all[oi])){
 					count++;
 				}
