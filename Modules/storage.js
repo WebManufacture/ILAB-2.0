@@ -23,8 +23,9 @@ StorageLayer.prototype = {
 	_fillIndexes: function(data){
 		if (!data) return;
 		for(var i = 0; i < data.length; i++){
-			if (data[i].id){
-				this.indexes[data[i].id] = data[i];
+			var id = data[i].id;
+			if (id){
+				this.indexes[id] = data[i];
 			}
 		}
 	},
@@ -32,9 +33,10 @@ StorageLayer.prototype = {
 	_fillItems: function(data){
 		if (!data) return;
 		for(var i = 0; i < data.length; i++){
-			if (data[i].type){
-				if (!this.types[data[i].type]) this.types[data[i].type] = [];
-				this.types[data[i].type].push(data[i]);
+			var type = data[i].type;
+			if (type){
+				if (!this.types[type]) this.types[type] = [];
+				this.types[type].push(data[i]);
 			}
 		}
 	},	
@@ -120,6 +122,9 @@ StorageLayer.prototype = {
 		return this._queryInternal(selector);
 	},
 		
+	getSubLayerItems : function(){
+		return null;	
+	},
 	
 	resolveExternalLinks : function(resolver){
 		if (typeof resolver == "function"){
@@ -208,6 +213,17 @@ Storage = function(file, createIfNotExists){
 		}
 	}
 	
+	function Watch(){
+		if (!stor.watching){
+			this.watcher = fs.watch(file, {}, function(event, fname){
+				if (!stor.selfChange && !stor.closed && !stor.reloading){
+					stor.Reload();
+				}
+			});
+			stor.watching = true;
+		}
+	}
+	
 	this.Reload = function(create){
 		if (!stor.closed && !stor.reloading){
 			stor.Init();
@@ -216,12 +232,26 @@ Storage = function(file, createIfNotExists){
 				if (exists || create){
 					stor.reloading = true;
 					if (exists){
-						var objects = JSON.parse(fs.readFileSync(stor.file));
-						stor._loadStore(objects);
-					}
-					stor.emit("load");
-					stor.reloading = false;					
-					if (!exists && create) { stor._save(); };
+						fs.readFile(stor.file, function(err, data){
+							var objects = JSON.parse(data);
+							if (!objects){
+								console.warn("Loading storage " + stor.file + " EMPTY!")
+							}
+							else{
+								console.log("Loading storage " + stor.file + " " + objects.length + " items")
+							}
+							stor._loadStore(objects);
+							stor.emit("store-loaded");
+							Watch();
+							stor.reloading = false;	
+						});						
+					}				
+					else{
+						stor.emit("store-loaded");
+						stor.reloading = false;	
+						if (create) { stor._save(); };
+						Watch();
+					}					
 				}
 				else{
 					console.error("Deleted " + stor.file);
@@ -232,13 +262,6 @@ Storage = function(file, createIfNotExists){
 	}
 	stor.file = file;
 	this.Reload(createIfNotExists);
-	if (file){
-		this.watcher = fs.watch(file, {}, function(event, fname){
-			if (!stor.selfChange && !stor.closed){
-				stor.Reload();
-			}
-		});
-	}
 }
 
 Storage.Delete = function(storage){
@@ -265,8 +288,9 @@ Inherit(Storage, EventEmitter, {
 	_loadStore : function(objects){
 	    this.layers = [];
 		while (objects && objects.length > 0){
-			var layer = this.layers.push(new StorageLayer(objects));
-			//objects = layer.getSubLayerItems();			
+			var layer = new StorageLayer(objects);
+			this.layers.push(layer);
+			objects = layer.getSubLayerItems();
 		}			
 	},
 	

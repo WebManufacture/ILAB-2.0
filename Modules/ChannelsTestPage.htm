@@ -11,6 +11,7 @@
 		<title>Каналы</title>
 	</head>
 	<body>
+		<include url='http://services.web-manufacture.net/Authentication/Authentication.htm'></include>
 		<script type='text/javascript'>
 			testData = [
 				"user#vasya1.new",
@@ -30,10 +31,56 @@
 				".passive",
 				".active.old",
 			];
-			storage = new Storage();
-			for (var i = 0; i < testData.length; i++){
+
+				//Тут создается просто локальный сторедж для личного пользования
+				storage = new Storage();
+				for (var i = 0; i < testData.length; i++){
 				storage.add(testData[i]);	
 			}
+
+			WS.DOMload(function(){
+
+				//Тут мы используем серверный сторедж
+				var stor = new Storages.Server();
+
+				stor.all("*", function(data){
+					var objs = JSON.parse(data);
+					for (var i = 0; i < objs.length; i++){
+						var obj = objs[i];
+						WS.Body.div(".obj", "Some object on server: " + JSON.stringify(obj))
+					}
+				})
+
+				//Пример добавления объекта
+				//stor.add("div#" + (Math.random() + "").replace("0.", "") + ".enabled").go()
+
+				//Или удаления
+				//stor.del("div.enabled", function(){ alert("All enabled divs was deleted!"); })
+
+				//Тут мы используем серверный сторедж, который подключен к защищенному хранилищу
+				var astor = new Storages.Server(Config.authUrl);
+
+				astor.all("user", function(data){
+					var users = JSON.parse(data);
+					for (var i = 0; i < users.length; i++){
+						var user = users[i];
+						WS.Body.div(".user", "User: " + user.login)
+					}
+				});
+
+				//Тут мы используем серверный сторедж привязанный к текущему пользователю
+				var ustor = new Storages.Server.User();
+
+				ustor.all("*", function(data){
+					var data = JSON.parse(data);
+					for (var i = 0; i < data.length; i++){
+						var obj = data[i];
+						WS.Body.div(".user-specific", "User data: " + JSON.stringify(obj))
+					}
+				})
+
+			});
+
 		</script>
 	</body>
 </html>

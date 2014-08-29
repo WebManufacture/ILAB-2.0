@@ -24,7 +24,7 @@ function Auth(config){
 	this.get = CreateClosure(this.storage.get, this.storage);
 	this.set = CreateClosure(this.storage.set, this.storage);
 	this.del = CreateClosure(this.storage.del, this.storage);
-	this.storage.on("load", function(){
+	this.storage.once("store-loaded", function(){
 		auth.Reload();
 	});	
 };
