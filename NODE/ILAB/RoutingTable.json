@@ -17,7 +17,8 @@
 		"Type" : "proxied",
 		"Frame":"./ILAB/Servers/ManagedServer", 
 		"File":"./KLAB/KLabServer.js",
-		"State":"working"
+		"basepath": "./",
+		"State":"working"	
 	}, 
 	{
 		"id":"ILAB",

@@ -17,6 +17,44 @@ StorageServer = function(config, router){
 };
 	
 StorageServer.prototype = {
+	GET : function(req, res, url, fullData){
+		res.setHeader("Access-Control-Allow-Headers", "auth-parameters");
+		function finish(code, text, ctype){
+			if (typeof(text) != 'string'){
+				text = JSON.stringify(text);
+				if (!ctype) ctype = "text/json";
+			}
+			else{
+				if (!ctype) ctype = "text/plain";
+			}
+			if (ctype){
+				res.setHeader("Content-Type", ctype);
+			}
+			res.statusCode = code;
+			res.end(text);
+		}
+		function toArray(obj){
+			var arr = [];
+			try{
+				for (var item in obj){
+					var o = JSON.parse(JSON.stringify(obj[item]));
+					o.id = item;
+					arr.push(o);
+				}
+			}
+			catch(e){
+				console.error("U: " + obj[item]);
+			}
+			return arr;
+		}
+		var storage = this._getStorage(req, url);
+		if (!storage){
+			finish(403, "You are have no rights for use this storage!");
+			return;
+		}
+		finish(200, storage.layers);
+	},
+	
 	POST : function(req, res, url, fullData){
 		res.setHeader("Access-Control-Allow-Headers", "auth-parameters");
 		function finish(code, text, ctype){
