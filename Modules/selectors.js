@@ -2,7 +2,13 @@ Selector = function(str){
 	this.source = "";
 	if (str && typeof str == "string") {
 		var item;
-		var regex = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
+		//while (str.indexOf('') > 0)
+		var regex = new RegExp(Selector._regex, "ig");
+		if (str.start("/") || str.start(">")){
+			this.isRoot = true;
+			this.type = "root";
+			this.source = str;
+		}
 		while((item = regex.exec(str)) != null){
 			if (item[1] == ""){
 				this._add(item[2], item[3]);
@@ -21,8 +27,12 @@ Selector = function(str){
 	}
 }
 
+
+Selector._regex = "([/>\\s]?)([#.:@]?)([\\w\\*='\"-]+)";
+
 Selector.prototype = {
-	identify : function(symbol, entity){
+	_identify : function(symbol, entity){
+		if (!entity) return;
 		if (symbol == "" && !this.item){
 			this.type = entity;
 		}
@@ -33,6 +43,10 @@ Selector.prototype = {
 			if (!this.meta) this.meta = {};
 			this.meta[entity] = true;
 		}
+		if (symbol == "@"){
+			var keyValue = entity.split("=");
+			this[keyValue[0]] = keyValue.length > 1 ? keyValue[1] : null;
+		}
 		if (symbol == "."){
 			if (!this.classes) this.classes = [];
 			var tags = '';
@@ -41,18 +55,23 @@ Selector.prototype = {
 				this.tags = " " + entity + " ";
 			}
 			else{
-				for (var i = 0; i < this.classes.length; i++){
-					if (entity && this.classes[i] > entity){
-						this.classes.splice(i, 0, entity);
-						entity = null;
+				if (!this.tags.contains(" " + entity + " ")){
+					this.tags = '';
+					for (var i = 0; i < this.classes.length; i++){
+						if (entity && this.classes[i] > entity){
+							this.classes.splice(i, 0, entity);
+							entity = null;
+							break;							
+						}
+					}					
+					if (entity){
+						this.classes.push(entity);
 					}
-					this.tags += " " + this.classes[i];
+					for (var i = 0; i < this.classes.length; i++){
+						this.tags += " " + this.classes[i];
+					}
+					this.tags += " ";
 				}
-				if (entity){
-					this.classes.push(entity);
-					this.tags += " " + entity;
-				}
-				this.tags += " ";
 			}
 		}
 	},
@@ -79,13 +98,42 @@ Selector.prototype = {
 		return true;
 	},
 	
+	add : function(){
+		
+	},
+	
+	has : function(){
+		
+		
+	},
+	
+	set : function(){
+		
+		
+	},
+	
+	del : function(){
+		
+		
+	},	
+	
+	get : function(){
+		
+		
+	},
+	
+	all : function(){
+		
+		
+	},
+	
 	_add : function(symbol, entityName){
 		if (typeof symbol != "string") return;
 		if (!entityName && symbol.length >= 1){
 			entityName = symbol.substr(1);
 		}
 		this.source += symbol + entityName;
-		this.identify(symbol, entityName);
+		this._identify(symbol, entityName);
 	},
 	
 	_next : function(selector){
@@ -99,39 +147,24 @@ Selector.prototype = {
 	}
 }
 
-Selector.Regexp = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
-
-Selector.parse = function(txt){
+Selector.Parse = function(txt){
 	if (txt){
 		var item;
 		var items = [];
-		var currentSelector;
-		var regex = /([/>\s]?)([#.:]?)([\w\*-]+)/ig;
-		while((item = regex.exec(txt)) != null){
-			if (currentSelector){
-				if (item[1] == ""){
-					currentSelector._add(item[2], item[3]);
-				}
-				else{
-					if (item[1] == " "){
-						currentSelector = currentSelector._follow(new Selector(item[2], item[3]));
-						items.push(currentSelector);
-					}
-					if (item[1] == "/" || item[1] == ">"){
-						currentSelector = currentSelector._next(new Selector(item[2], item[3]));
-						items.push(currentSelector);
-					}
-				}
-			}
-			else{
-				currentSelector = new Selector();
-				currentSelector._add(item[2], item[3]);
-				items.push(currentSelector);
+		var lines = txt.split('\n');	
+		for (var i = 0; i < lines.length; i++){
+			var parts = lines[i].split(',');		
+			for (var j = 0; j < parts.length; j++){
+				items.push(new Selector(parts[j]));
 			}
 		}
 		return items;
 	}	
 }
+
+Selector._rootNode = new Selector("root");
+
+Selector._rootNode.isRoot = true;
 
 Selector.first = Selector.single = function(txt){
 	if (txt){

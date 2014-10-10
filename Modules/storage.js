@@ -12,9 +12,9 @@ StorageLayer = function(objects){
 	this.classes = {
 
 	};	
-	if (objects){
-		this._fillIndexes(this.objects);
+	if (objects){		
 		this._fillItems(this.objects);
+		this._fillIndexes(this.objects);
 		this._fillClasses(this.objects);	
 	}
 }
@@ -313,10 +313,10 @@ Inherit(Storage, EventEmitter, {
 		}
 	},
 	
-	all : function(selector){
+	all : function(selector, data){
 		if (this.layers.length == 0) return [];
-		if (!selector) selector = "*";		
-		if (typeof(selector) == 'string') selector = new Selector(selector);
+		selector = this._formatObject(selector, data);
+		if (!selector) selector = "*";
 		var items = this.layers[0].all(selector);
 		while (items.length > 0 && (selector.follow || selector.next)){
 			var result = [];
@@ -351,10 +351,10 @@ Inherit(Storage, EventEmitter, {
 		return items;
 	},
 
-	get : function(selector){
+	get : function(selector, data){
 		if (this.layers.length == 0) return [];
+		selector = this._formatObject(selector, data);
 		if (!selector) selector = "*";
-		if (typeof(selector) == 'string') selector = Selector.first(selector);
 		var items = this.layers[0].all(selector);
 		while (items.length > 0 && (selector.follow || selector.next)){
 			var result = [];
@@ -388,22 +388,41 @@ Inherit(Storage, EventEmitter, {
 	},
 	
 	_formatObject : function(selector, data){
+		if (!selector) return data;
 		if (typeof(selector) == 'string') selector = new Selector(selector);
 		if (!data) data = {};
 		else if (typeof (data) == 'string'){
-			data = this._formatObject(new Selector(data), {});
+			data = new Selector(data);
 		}
 		if (selector.id && !data.id){
 			data.id = selector.id;
 		}
+		/*if (data.classes){
+			data.tags = " " + data.classes.join(" ") + " ";
+		};*/
+		if (data.classes){
+			for (var i = 0; i < data.classes.length; i++){
+				if (!data.tags) data.tags = " ";
+				var cls = data.classes[i];
+				if (!data.tags.contains(" " + cls + " ")){
+					data.tags += cls + " ";
+				}
+			}
+		}		
+		if (selector.tags && !selector.classes){
+			selector.classes = selector.tags.trim().split(" ");
+		}		
 		if (selector.classes){
-			if (!data.tags) data.tags = " ";
 			for (var i = 0; i < selector.classes.length; i++){
+				if (!data.tags) data.tags = " ";
 				var cls = selector.classes[i];
 				if (!data.tags.contains(" " + cls + " ")){
 					data.tags += cls + " ";
 				}
 			}
+		}		
+		if (data.tags){
+			data.classes = data.tags.trim().split(" ");
 		}
 		if (selector.type && !data.type){
 			data.type = selector.type;
@@ -458,20 +477,16 @@ Inherit(Storage, EventEmitter, {
 	add : function(selector, data){
 		if (!selector && !data) return;
 		if (this.layers.length == 0) this.layers.push(new StorageLayer());
-		if (!data && typeof(selector) == "object"){
-			data = selector;	
-		}
-		else{
-			data = this._formatObject(selector, data);
-		}
+		data = this._formatObject(selector, data);
 		this.checkChilds(data);		
 		this.layers[0].add(data);
 		this._save();
 		return data;
 	},
 
-	del : function(selector){
-		if (typeof(selector) == 'string') selector = Selector.first(selector);
+	del : function(selector, data){		
+		selector = this._formatObject(selector, data);
+		if (!selector) return;
 		var count = 0;
 		for (var i = this.layers.length-1; i >= 0; i--){
 			var all = this.layers[i].all(selector);
