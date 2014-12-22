@@ -14,12 +14,11 @@ global.IsolatedNode = IsolatedNode;
 
 global.IsolatedNode.Type = "isolated";
 
-Inherit(IsolatedNode, ManagedNode, {
+Inherit(IsolatedNode, global.ManagedNode, {
 	configure : function(config){
 		if (IsolatedNode.base.configure){
 			IsolatedNode.base.configure.apply(this, arguments);
 		}
-		this.logger = new Logger(this.id, true);
 		this.subscribers = {};
 		return true;
 	},
@@ -27,6 +26,7 @@ Inherit(IsolatedNode, ManagedNode, {
 	//To process "callback" automatically you should return 'True', otherwise you should process "callback" manually
 	//If you return 'false', a "callback" will not be processed
 	load : function(callback){
+		console.log(IsolatedNode.base.base);
 		var config = this.lconfig;
 		//console.log(config);
 		
@@ -85,9 +85,9 @@ Inherit(IsolatedNode, ManagedNode, {
 				
 				fork.logger.debug("%bright;%blue;fork starting %normal;" + path);
 			}
-			else{
-				this.State = Node.States.EXCEPTION;
+			else{			
 				this.logger.error("Path " + fork.path + " does not exists");
+				this.State = Node.States.EXCEPTION;
 			}
 		}
 		catch (err){

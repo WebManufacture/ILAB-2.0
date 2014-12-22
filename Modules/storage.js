@@ -1,6 +1,7 @@
 var fs = require('fs');
 var Path = require('path');
 var EventEmitter = require("events").EventEmitter;
+var util = require('util');
 
 StorageLayer = function(objects){
 	if (!objects) objects = [];
@@ -210,6 +211,9 @@ Storage = function(file, createIfNotExists){
 	this.Init = function(){
 		if (!stor.closed){
 			stor.layers = [];
+			stor.prototypes = {};
+			stor.defaultType = null;
+			stor.defaultProto = null;
 		}
 	}
 	
@@ -217,6 +221,7 @@ Storage = function(file, createIfNotExists){
 		if (!stor.watching){
 			this.watcher = fs.watch(file, {}, function(event, fname){
 				if (!stor.selfChange && !stor.closed && !stor.reloading){
+					stor.emit("reloading");
 					stor.Reload();
 				}
 			});
@@ -232,22 +237,34 @@ Storage = function(file, createIfNotExists){
 				if (exists || create){
 					stor.reloading = true;
 					if (exists){
-						fs.readFile(stor.file, function(err, data){
+						var data = fs.readFileSync(stor.file, 'utf8');						
+						if (Path.extname(stor.file) == ".json"){
 							var objects = JSON.parse(data);
-							if (!objects){
-								console.warn("Loading storage " + stor.file + " EMPTY!")
+						}
+						if (Path.extname(stor.file) == ".js"){
+							var tmp = eval(data);
+							if (tmp){
+								if (tmp.length == undefined){
+									objects = [tmp];
+								}
+								else{
+									objects = tmp;
+								}
 							}
-							else{
-								console.log("Loading storage " + stor.file + " " + objects.length + " items")
-							}
-							stor._loadStore(objects);
-							stor.emit("store-loaded");
-							Watch();
-							stor.reloading = false;	
-						});						
+						}
+						if (!objects){
+							console.warn("Loading storage " + stor.file + " EMPTY!")
+						}
+						else{
+							console.log("Loading storage " + stor.file + " " + objects.length + " items")
+						}
+						stor._loadStore(objects);
+						stor.emit("reloaded");
+						Watch();
+						stor.reloading = false;	
 					}				
 					else{
-						stor.emit("store-loaded");
+						stor.emit("reloaded");
 						stor.reloading = false;	
 						if (create) { stor._save(); };
 						Watch();
@@ -261,7 +278,12 @@ Storage = function(file, createIfNotExists){
 		}
 	}
 	stor.file = file;
-	this.Reload(createIfNotExists);
+	if (createIfNotExists != undefined){
+		this.Reload(createIfNotExists);
+	}
+	else{
+		this.Init();
+	}
 }
 
 Storage.Delete = function(storage){
@@ -285,13 +307,57 @@ Inherit(Storage, EventEmitter, {
 		this.closed = true;
 	},
 	
+	_initObject : function(obj, selector)
+	{
+		if (selector){
+			this._formatObject(selector, obj);
+		}		
+		if (obj.type){
+			var proto = this.prototypes[obj.type];
+			if (!proto) proto = this.defaultProto;
+			if (proto) obj.prototype = proto;
+		}
+		else{
+			if (this.defaultProto) obj.prototype = this.defaultProto;
+		}
+	},
+	
+	_initObjects : function(objects)
+	{
+		if (!util.isArray(objects._childs)){
+			for (var selector in objects._childs){
+				var obj = objects._childs[selector];
+				this._initObject(obj, selector);
+				if (obj._childs){
+					this._initObjects(obj._childs);
+				}
+			}
+		}
+		else{
+			for (var i = 0; i < objects.length; i++){
+				this._initObject(objects[i]);
+				if (objects[i]._childs){
+					this._initObjects(objects[i]._childs);
+				}
+			}	
+		}
+	},
+	
 	_loadStore : function(objects){
 	    this.layers = [];
 		while (objects && objects.length > 0){
+			this._initObjects(objects);
 			var layer = new StorageLayer(objects);
 			this.layers.push(layer);
 			objects = layer.getSubLayerItems();
 		}			
+	},
+	
+	LoadData : function(objects){
+	    if (util.isArray(objects)){
+			return this._loadStore;
+		}
+		return this._loadStore([objects]);
 	},
 	
 	_save : function(){
@@ -387,6 +453,12 @@ Inherit(Storage, EventEmitter, {
 		return items[0];
 	},
 	
+	addPrototype : function(type, proto){
+		if (type){
+			this.prototypes[type] = proto;
+		}
+	},
+	
 	_formatObject : function(selector, data){
 		if (!selector) return data;
 		if (typeof(selector) == 'string') selector = new Selector(selector);
@@ -395,7 +467,7 @@ Inherit(Storage, EventEmitter, {
 			data = new Selector(data);
 		}
 		if (selector.id && !data.id){
-			data.id = selector.id;
+			data._id = selector.id;
 		}
 		/*if (data.classes){
 			data.tags = " " + data.classes.join(" ") + " ";
@@ -413,10 +485,11 @@ Inherit(Storage, EventEmitter, {
 			selector.classes = selector.tags.trim().split(" ");
 		}		
 		if (selector.classes){
+			if (!data._tags) data._tags = " ";
 			for (var i = 0; i < selector.classes.length; i++){
 				if (!data.tags) data.tags = " ";
 				var cls = selector.classes[i];
-				if (!data.tags.contains(" " + cls + " ")){
+				if (!data._tags.contains(" " + cls + " ")){
 					data.tags += cls + " ";
 				}
 			}
@@ -426,6 +499,9 @@ Inherit(Storage, EventEmitter, {
 		}
 		if (selector.type && !data.type){
 			data.type = selector.type;
+		}
+		if (!data.type) {
+			data.type = this.defaultType;
 		}
 		if (selector.next){
 			if (!data.childs) data.childs = [];

@@ -7,7 +7,7 @@ function Node(parentNode, id){
 	this._state = 0;
 	this.parentNode = parentNode;
 	this.type = Node.Type;
-	
+	this.setMaxListeners(100);
 	if (id) this.id = id.toLowerCase();
 };
 
@@ -51,7 +51,7 @@ global.Node.Inherit = function(Child, mixin){
 Inherit(Node, EventEmitter, {
 	configure : function(config){
 		if (!this.id) {
-			this.id = (this.Type + Math.random()).replace("0.", "");
+			this.id = (this.type + Math.random()).replace("0.", "");
 			this.id = this.id.toLowerCase();
 		}
 	
@@ -64,7 +64,8 @@ Inherit(Node, EventEmitter, {
 		for (var item in config){
 			this.lconfig[item.toLowerCase()] = config[item];
 		}
-		this.logger = new Logger(this.id, true);
+		var ntype = this.lconfig.type;
+		this.logger = new Logger(this.id + ":" + ntype, true);				
 	},
 	
 	Init : function(){
@@ -259,5 +260,4 @@ Object.defineProperty(Node.prototype, "State",{
 	}
 });
 	
-
 module.exports = Node;

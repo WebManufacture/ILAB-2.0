@@ -183,6 +183,7 @@ Inherit(Async.Collector, EventEmitter, {
 Inherit(Async.Waterfall, EventEmitter, {
 	checkFunction : function(){
 		this.counter--;
+		this.emit("count");
 		var self = this;
 		if (this.counter == 0){
 			setImmediate(function(){
