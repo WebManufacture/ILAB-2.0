@@ -1,10 +1,9 @@
-{
+FrameNode = {
 	Ver : "0.3.2", 
 	LogLevel: "debug",
 	Modules : ["ilab_nodes_connectivity.js"],
-	Type: "FrameNode", 
-	State : "working",
-	ChildNodes : {
+	type: "FrameNode", 
+	_childs : {
 		ChannelsService : {
 			State : "working",
 			Node : "./ILAB/Services/ChannelService.js", 
@@ -113,7 +112,8 @@
 			}
 		},
 		
-		TcpEmulator: {Type:"isolated", State:"working", port:5012},
+		
+		Node192983 : {type:"isolated", id: "TcpEmulator", State:"working", port:5012},
 		Test1 : {
 			State: "initialized"
 		},
@@ -129,5 +129,6 @@
 		Test5 : {
 			State: "unloaded"
 		},
+		
 	}
 }

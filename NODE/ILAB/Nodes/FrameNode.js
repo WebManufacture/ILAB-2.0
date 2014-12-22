@@ -63,12 +63,11 @@ Inherit(FrameNode, ManagedNode, {
 	load : function(){
 		try{
 			var self = this;
-			debugger;
 			if (FrameNode.base.load){
 				FrameNode.base.load.apply(this, arguments);
 			}		
 			
-			if (this.lconfig.childnodes) this.ChildNodes = this.lconfig.childnodes;
+			if (this.lconfig._childs) this.ChildNodes = this.lconfig._childs;
 			else this.ChildNodes = {};
 			var citems = this.ChildNodes;
 			var nodes = {};
@@ -99,8 +98,23 @@ Inherit(FrameNode, ManagedNode, {
 				var node = nodes[nodeId];
 				var item = node.currentConfig;			
 				try{
-					node.Init();
-					node.Configure(item);
+					try{
+						node.Init();
+					}
+					catch(err){
+						this.logger.error("%red;{0}:{1} {2}", node.type, node.id, "Init error");
+						this.logger.error(err);						
+						continue;
+					}
+					try{
+
+						node.Configure(item);
+					}
+					catch(err){
+						this.logger.error("%red;{0}:{1} {2}", node.type, node.id, "Configure error");
+						this.logger.error(err);
+						continue;
+					}
 					if (node.defaultState === undefined){
 						node.defaultState = Node.States.LOADED;
 						this.logger.debug("%grey;{0}#%normal;{1}:{3} {2}", node.type, node.id, item.File ? item.File : "", Node.Statuses[node.defaultState]);
@@ -125,7 +139,7 @@ Inherit(FrameNode, ManagedNode, {
 				self.State = Node.States.LOADED;
 				this.destroy();
 			});
-			
+						
 			for (var id in self.ChildNodes){
 				var node = self.ChildNodes[id];
 				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING && node.State >= Node.States.INITIALIZED){
@@ -136,7 +150,7 @@ Inherit(FrameNode, ManagedNode, {
 					//lf.add(node.Load, node);
 				}
 			}
-			
+						
 			for (var id in self.ChildNodes){
 				var node = self.ChildNodes[id];
 				if (node.defaultState >= Node.States.LOADED && node.defaultState < Node.States.UNLOADING && node.State >= Node.States.INITIALIZED){
@@ -144,7 +158,7 @@ Inherit(FrameNode, ManagedNode, {
 						node.Load();
 					}
 					catch(err){
-						lf.revertCallback();
+						lf.revertCallback();						
 						this.logger.error(err);
 					};
 				}

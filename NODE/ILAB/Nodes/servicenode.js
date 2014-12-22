@@ -18,7 +18,7 @@ Inherit(ServiceNode, ManagedNode, {
 	init : function(){
 		this.configured = false;
 		if (!Frame.Services) Frame.Services = new Storage();
-		this.proxy = Frame.Services.add(new (useModule("ServiceProxy.js"))(this.selector));
+		//this.proxy = Frame.Services.add(new (useModule("ServiceProxy.js"))(this.selector));
 		this.requiredServices = [];
 		var result = true;
 		if (ServiceNode.base.init){

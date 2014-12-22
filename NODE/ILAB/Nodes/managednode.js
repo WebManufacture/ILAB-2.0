@@ -1,4 +1,5 @@
 useNodeType("node.js");
+useModule("async.js");
 var Path = require("path");
 
 function ManagedNode (parentNode, item){
@@ -10,7 +11,7 @@ global.ManagedNode = ManagedNode;
 
 global.ManagedNode.Type = "managed";
 
-global.Node.Inherit(ManagedNode, {
+Inherit(ManagedNode, global.Node, {
 	init : function(){
 		var result = true;
 		var self = this;
@@ -87,7 +88,7 @@ global.Node.Inherit(ManagedNode, {
 		return this.subscribeToChannel(this.id + path, handler, isPermanent);
 	},
 	
-	once : function(path, handler){
+	subscribeOnce : function(path, handler){
 		if (!path.start("/")) path = "/" + path;
 		Channels.on(this.id + path);
 	},

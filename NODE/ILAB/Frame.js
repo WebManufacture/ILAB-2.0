@@ -88,7 +88,7 @@ Frame.CreateNode = function(config, defaultNode, logger){
 	else{
 		if (defaultNode) {
 			if (typeof defaultNode == "string"){
-				config.Type = defaultNode;
+				config.type = defaultNode;
 				return Frame.CreateNode(config, defaultNode, logger);
 			}
 			if (defaultNode && typeof defaultNode == "object"){
@@ -113,10 +113,20 @@ Frame.GetNodeById = function(id){
 	return Frame.Nodes[id];
 }
 
-Frame._initFrame = function(){
+try{
+	Frame.useModule("Utils.js");
+	Frame.useModule("Channels.js");
+	Frame.useModule("Async.js");
+	Logger = Frame.useModule("logger.js");
+	global.Node = Frame.useNodeType("node.js");
+
+	process.setMaxListeners(100);
+
 	Frame.LogLevel = Logger.Levels.trace;
 	Frame.isChild = false;
 	if (process.env.isChild) Frame.isChild = true;
+	
+	var Storage = useModule("Storage.js");
 	
 	var config = process.argv[2];
 	
@@ -131,79 +141,37 @@ Frame._initFrame = function(){
 				}
 			}
 			else{
+				try{
+					cfgStr = JSON.parse(cfgStr);
+				}
+				catch(e){
+				
+				}
 				return cfgStr;
 			}
 		}
 		return null;
 	}
 	
-	config = _parseConfig(config, "env.js");
+	config = _parseConfig(config);
 	
-	if (config.cwd){ process.chdir(config.cwd) };
-
-	var logger = new Logger(Frame.isChild ? process.env.parentNode: null, !Frame.isChild);
-
-	if (Frame.isChild){
-		logger.info("%green;Frame module started: {0}", process.env.parentNode);
-	}
-	else{
-		logger.info("%green;Frame server started: {0} %grey;{1}", process.cwd(), config.config);		
-	}
-
-	if (config.config){
-		config.config = Path.resolve(config.config);
-		if (fs.existsSync(config.config)){
-			function ReloadConfig(){
-				var cfgFile = fs.readFileSync(config.config, "", 'utf8');
-				if (cfgFile && cfgFile.length > 0){
-					cfgFile = _parseConfig(cfgFile, config.config);
-					for (var item in cfgFile){
-						var val = cfgFile[item];
-						config[item] = val;
-					}
-				}
-				useConfig(config);
-			}
-		
-			ReloadConfig();
-			
-			ConfigWatcher = fs.watch(config.config);	
-			
-			ConfigWatcher.on("change",  function(event, fname){
-				logger.warn("Config " + (event ? event : "UNKNOWN") + " event occured!" + (fname ? fname : ""));
-				if (Frame.isReload) return;
-				if (event == "change"){
-					logger.warn("Reloading...");
-					logger.warn(event);
-					Frame.isReload	= true;
-					setTimeout(function(){
-						logger.warn("Config Reload interval cleared! ");
-						Frame.isReload = false;
-					}, 300);
-					Frame.RootNode.Unload(function(){
-						logger.warn("Unloding finished...");
-						config = JSON.parse(process.argv[2]);
-						ReloadConfig();			
-						logger.warn("Initializing...");
-						Frame.RootNode.Configure(config);
-						Frame.RootNode.Load();
-					});
-				};
-			});
-			
+	if (typeof config == 'object'){
+		if (config.cwd){ process.chdir(config.cwd) };
+		if (config.file){
+			Frame.Storage = new Storage(config.config);
 		}
 		else{
-			logger.error("Config file " + config.config + " not found");
+			Frame.Storage = new Storage();
+			Frame.Storage.LoadData(config);
 		}
-	}		
-
-	function useConfig(){
-		if (config.LogLevel && Logger.Levels[config.LogLevel + ""]) Frame.LogLevel = Logger.Levels[config.LogLevel + ""];
-		if (!config.id){
-			config.id = "Main";
-		}	
 	}
-				
+	
+	if (typeof config == 'string'){
+		Frame.Storage = new Storage(config);
+	}
+
+	var logger = new Logger(Frame.isChild ? process.env.parentNode: null, !Frame.isChild);
+		
 	if (!Frame.NodesByTypes){
 		Frame.NodesByTypes = {};
 		var nodes = fs.readdirSync(Path.resolve(Frame.NodesPath));
@@ -212,6 +180,7 @@ Frame._initFrame = function(){
 				var node = require(Path.resolve(Frame.NodesPath + nodes[i]));
 				if (node && node.Type){
 					Frame.NodesByTypes[node.Type] = node;
+					Frame.Storage.prototypes[node.Type] = node;
 					if (!Frame.isChild){
 						logger.info("Support node type: %marine;{0}", node.Type);
 					}
@@ -222,6 +191,45 @@ Frame._initFrame = function(){
 			}
 		}
 	}
+	
+	if (Frame.isChild){
+		logger.info("%green;Frame module started: {0}", process.env.parentNode);
+	}
+	else{
+		logger.info("%green;Frame server started: {0} %grey;{1}", process.cwd(), config);		
+	}
+		
+	Frame.Storage.Reload(true);
+	
+	
+	function _Reload(){
+		config = Frame.Storage.get("*");
+		if (config.LogLevel && Logger.Levels[config.LogLevel + ""]) Frame.LogLevel = Logger.Levels[config.LogLevel + ""];
+		if (!config.id){
+			config.id = "Main";
+		}	
+	}
+	
+	_Reload();	
+		
+	Frame.Storage.on("reloaded",  function(event, fname){
+		logger.warn("Config " + (event ? event : "UNKNOWN") + " event occured!" + (fname ? fname : ""));
+		if (Frame.isReload) return;
+		logger.warn("Reloading...");
+		logger.warn(event);
+		Frame.isReload	= true;
+		setTimeout(function(){
+			logger.warn("Config Reload interval cleared! ");
+			Frame.isReload = false;
+		}, 300);
+		Frame.RootNode.Unload(function(){
+			logger.warn("Unloding finished...");
+			_Reload();
+			logger.warn("Initializing...");
+			Frame.RootNode.Configure(config);
+			Frame.RootNode.Load();
+		});
+	});
 
 	if (!config.Modules) config.Modules = [];
 	logger.debug("Modules in " + Frame.ModulesPath);
@@ -407,20 +415,8 @@ Frame._initFrame = function(){
 				console.error(error);
 			}
 		}
-	});
-}
+	});	
 
-try{
-	Frame.useModule("Utils.js");
-	Frame.useModule("Channels.js");
-	Frame.useModule("Async.js");
-	Logger = Frame.useModule("logger.js");
-	Frame.useNodeType("node.js");
-
-	process.setMaxListeners(100);
-	
-	
-	Frame._initFrame();
 }
 catch(err){
 	if (Frame.isChild && Channels.emitToGlobal){
