@@ -81,7 +81,7 @@ Inherit(Node, EventEmitter, {
 	
 	
 	Configure : function(config){
-	if (!config){
+		if (!config){
 			console.error("CONFIG CALL WITHOUT ARGUMENTS!");
 			return;
 		}

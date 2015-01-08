@@ -12,6 +12,7 @@ Frame.ServicesPath = Frame.ilabPath + "\\Services\\";
 Frame.NodeModulesPath = process.execPath.replace("node.exe", "") + "node_modules\\";
 Frame.Nodes = {};
 Frame.Modules = [];
+Frame.Services = {};
 
 global.useNodeType = Frame.useNodeType = function(path){
 	if (path.indexOf(".js") != path.length - 3){
@@ -117,6 +118,7 @@ try{
 	Frame.useModule("Utils.js");
 	Frame.useModule("Channels.js");
 	Frame.useModule("Async.js");
+	Frame.useModule("ServicesManager.js");
 	Logger = Frame.useModule("logger.js");
 	global.Node = Frame.useNodeType("node.js");
 
@@ -130,46 +132,38 @@ try{
 	
 	var config = process.argv[2];
 	
-	function _parseConfig(cfgStr, filePath){
-		if (cfgStr){
-			if (filePath){
-				if (filePath.ends(".json")){
-					return JSON.parse(cfgStr);
-				}
-				if (filePath.ends(".js")){
-					return eval("var configObj = " + cfgStr + ";configObj;");
-				}
-			}
-			else{
-				try{
-					cfgStr = JSON.parse(cfgStr);
-				}
-				catch(e){
-				
-				}
-				return cfgStr;
-			}
-		}
-		return null;
-	}
+	var configServiceType = "Direct";
 	
-	config = _parseConfig(config);
-	
-	if (typeof config == 'object'){
+	try{
+		config = JSON.parse(config);
+		configServiceType = "DirectConfigService";
 		if (config.cwd){ process.chdir(config.cwd) };
 		if (config.file){
-			Frame.Storage = new Storage(config.config);
+			configServiceType = "FileConfigService";
+			config = config.file;
 		}
-		else{
-			Frame.Storage = new Storage();
-			Frame.Storage.LoadData(config);
+	}
+	catch(e){
+		configServiceType = "FileConfigService";
+		if (config.indexOf("http://") == 0){
+			configServiceType = "RemoteConfigService";
+		}
+		if (config.indexOf("db://") == 0){
+			configServiceType = "DBConfigService";
 		}
 	}
 	
-	if (typeof config == 'string'){
-		Frame.Storage = new Storage(config);
+	if (ServicesManager.IsServiceAvailable(configServiceType)){
+		if (ServicesManager.LoadService(configServiceType)){
+			Frame.Config = ServicesManager.GetServiceContract(configServiceType);
+			Frame.Config.LoadData(config);
+		}
 	}
-
+	else{
+		Frame.Config = new Storage();
+		Frame.Config.LoadData(config);
+	}
+	
 	var logger = new Logger(Frame.isChild ? process.env.parentNode: null, !Frame.isChild);
 		
 	if (!Frame.NodesByTypes){
@@ -180,7 +174,7 @@ try{
 				var node = require(Path.resolve(Frame.NodesPath + nodes[i]));
 				if (node && node.Type){
 					Frame.NodesByTypes[node.Type] = node;
-					Frame.Storage.prototypes[node.Type] = node;
+					Frame.Config.prototypes[node.Type] = node;
 					if (!Frame.isChild){
 						logger.info("Support node type: %marine;{0}", node.Type);
 					}
@@ -196,12 +190,12 @@ try{
 		logger.info("%green;Frame module started: {0}", process.env.parentNode);
 	}
 	else{
-		logger.info("%green;Frame server started: {0} %grey;{1}", process.cwd(), config);		
+		logger.info("%green;Frame server started: {0} %grey;{1}", process.cwd(), Frame.Config);		
 	}
 		
 	Frame.Storage.Reload(true);
 	
-	
+	/*
 	function _Reload(){
 		config = Frame.Storage.get("*");
 		if (config.LogLevel && Logger.Levels[config.LogLevel + ""]) Frame.LogLevel = Logger.Levels[config.LogLevel + ""];
@@ -230,7 +224,7 @@ try{
 			Frame.RootNode.Load();
 		});
 	});
-
+*/
 	if (!config.Modules) config.Modules = [];
 	logger.debug("Modules in " + Frame.ModulesPath);
 	Frame.Modules = [];
