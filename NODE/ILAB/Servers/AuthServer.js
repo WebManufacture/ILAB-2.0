@@ -108,19 +108,14 @@ AuthServer.prototype = {
 			finish(500, "Invalid params: missing action");
 			return;
 		}
-		var selector = url.query.selector;
-		if (!selector){
-			finish(500, "Invalid params: missing selector");
-			return;
-		}
 		try{
-			selector = Selector.first(selector);
+			var selector = url.query.selector;
 			if (action == "all"){
-				finish(200, JSON.stringify(auth.all(selector)));
+				finish(200, JSON.stringify(auth.all(selector, data)));
 				return;
 			}
 			if (action == "get"){
-				var obj = auth.get(selector);
+				var obj = auth.get(selector, data);
 				if(obj){
 					finish(200, JSON.stringify(obj));
 				}

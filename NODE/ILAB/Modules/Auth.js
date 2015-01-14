@@ -7,26 +7,13 @@ useModule("Logger.js");
 var Storage = useModule("Storage.js");
 
 function Auth(config){
-	this.storage = new Storage(config.Storage);
-	var auth = this;
-	this.Reload = function(){
-		var users = auth.storage.all("user");
-		auth.Sessions = {};
-		for (var i = 0; i < users.length; i++){
-			var user = users[i];
-			if (user.sessionKey){
-				auth.Sessions[user.sessionKey] = user;
-			}
-		}
-	};
+	if (typeof config == "object") config = config.Storage;
+	var storage = this.storage = new Storage(config);
 	this.add = CreateClosure(this.storage.add, this.storage);
 	this.all = CreateClosure(this.storage.all, this.storage);
 	this.get = CreateClosure(this.storage.get, this.storage);
 	this.set = CreateClosure(this.storage.set, this.storage);
 	this.del = CreateClosure(this.storage.del, this.storage);
-	this.storage.once("store-loaded", function(){
-		auth.Reload();
-	});	
 };
 
 Inherit(Auth, EventEmitter, {	
@@ -34,13 +21,22 @@ Inherit(Auth, EventEmitter, {
 		this.storage._save();
 	},
 
-	GetSession : function(key) {
-		if (!key) {	return null; }
-		return this.Sessions[key];
+	GetUserBySession : function(key) {
+		if (!key) {
+			return null;
+		};
+		var session = this.storage.get("session#" + key);
+		if (session){
+			var uid = session._parentID;
+			if (uid) return this.storage.getByKey(session._parentID);
+		} 
+		return null;
 	},
 	
 	GetUser : function(login) {
-		if (!login)  {	return null; };
+		if (!login)  {
+			return null;
+		};
 		return this.storage.get("user#" + login);
 	},
 	
@@ -68,7 +64,7 @@ Inherit(Auth, EventEmitter, {
 	
 	RemoveSession : function(user){
 		if (user.sessionKey){
-			delete this.Sessions[user.sessionKey];
+			delete user.childs;
 			user.sessionKey = null;
 		}
 		this.Save();
@@ -87,6 +83,7 @@ Inherit(Auth, EventEmitter, {
 			}
 		}
 		user.sessionKey = sessionKey;
+		user.childs = [ {type: "session", id : sessionKey } ];
 		this.Save();
 		return sessionKey;
 	}

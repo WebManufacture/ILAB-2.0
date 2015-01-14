@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+		<link rel="stylesheet" href="http://services.web-manufacture.net/Styles/System.default.css">
+		<script type="text/javascript" src="http://services.web-manufacture.net/Base/v1.5?join=true"></script>
+		<script type="text/javascript" src="http://services.web-manufacture.net/SysUtils/NodeEnvironment.js"></script>
+		<script type="text/javascript" src="http://modules.web-manufacture.net/Channels.js"></script>	
+		<script type="text/javascript" src="http://modules.web-manufacture.net/Selectors.js"></script>	
+		<script type="text/javascript" src="http://modules.web-manufacture.net/Storage.js"></script>	
+		<title>Cерверный сторедж</title>
+	</head>
+	<body>
+		<include url='http://services.web-manufacture.net/Authentication/Authentication.htm'></include>
+		<script type='text/javascript'>
+			var obj = {
+				type : "permission", id : "PROJECTS",
+				deny_groups:["users"], 
+				allow_groups:["backup","admin"],
+				childs : [ 
+					{
+						type : "permission", id : "System", 
+						deny_groups: ["backup"], 
+						childs : [
+							{ type : "permission", id : "group-perm1_htm", deny_groups: ["user1"]},
+							{ type : "permission", id : "group-perm2_htm", allow_groups:["user2"]}
+						]
+					},
+					{
+						type : "permission", id : "Services", 
+						childs : [
+							{ type : "permission", id : "base", allow_groups: ["admin"]}
+						]
+					}      
+				]};
+
+
+			testData = [
+				"user#vasya1.new",
+				"user#vasya4.old",
+				"user#vasya5",
+				"user#vasya6",
+				"user#petya1",
+				"user>kite",
+				{ type: "user", childs : ["item#1", "item#5"]},
+				"user>permission.child.valued>kite",
+				"user.active",
+				"permission.new",
+				"permission.new.valued",
+				"permission#perm.new",
+				"permission",
+				".active",
+				".passive",
+				".active.old",
+			];
+
+				//Тут создается просто локальный сторедж для личного пользования
+				storage = new Storage();
+
+				WS.DOMload(function(){
+					for (var i = 1; i <= 3; i++){
+						obj.id += i;
+						storage.add(JSON.parse(JSON.stringify(obj)));
+					}
+					console.log(storage);
+				});
+
+		</script>
+	</body>
+</html>

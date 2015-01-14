@@ -128,6 +128,19 @@ try{
 						req.on("data", function(data){
 							fullData += data;		
 						});
+						if (this.module.noCollectData){
+						if (typeof serv.Process == "function"){
+								serv.Process(req, res, url, fullData);
+							return false;
+						}
+						else{
+							if (typeof serv[req.method] == "function"){
+									serv[req.method](req, res, url, fullData);
+								return false;
+							}
+						}
+						}
+						else{
 						if (typeof serv.Process == "function"){
 							req.on("end", function(){
 								serv.Process(req, res, url, fullData);
@@ -141,6 +154,7 @@ try{
 								});
 								return false;
 							}
+						}
 						}
 						res.statusCode = 500;
 						res.end("Handler error");
@@ -178,6 +192,21 @@ try{
 				req.on("data", function(data){
 					fullData += data;		
 				});
+				if (this.module.noCollectData){
+				if (typeof serv.Process == "function"){
+					context.abort();
+						serv.Process(req, res, url, fullData);
+					return false;
+				}
+				if (typeof serv.Process == "object"){
+					if (typeof serv.Process[req.method] == "function"){
+						context.abort();
+							serv.Process[req.method](req, res, url, fullData);
+						return false;
+					}						
+				}
+				}
+				else{
 				if (typeof serv.Process == "function"){
 					context.abort();
 					req.on("end", function(){				
@@ -193,6 +222,7 @@ try{
 						});
 						return false;
 					}						
+				}
 				}
 			}	
 		}

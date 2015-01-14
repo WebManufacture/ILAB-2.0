@@ -32,14 +32,13 @@
 				".active.old",
 			];
 
-				//Тут создается просто локальный сторедж для личного пользования
-				storage = new Storage();
+			//Тут создается просто локальный сторедж для личного пользования
+			storage = new Storage();
 				for (var i = 0; i < testData.length; i++){
 				storage.add(testData[i]);	
 			}
 
-			WS.DOMload(function(){
-
+			WS.DOMload(function(){				
 				//Тут мы используем серверный сторедж
 				var stor = new Storages.Server();
 
@@ -67,18 +66,21 @@
 						WS.Body.div(".user", "User: " + user.login)
 					}
 				});
+				
+				window.onAuth = function(login, key){
 
-				//Тут мы используем серверный сторедж привязанный к текущему пользователю
-				var ustor = new Storages.Server.User();
+					//Тут мы используем серверный сторедж привязанный к текущему пользователю
+					var ustor = new Storages.Server.User();
 
-				ustor.all("*", function(data){
-					var data = JSON.parse(data);
-					for (var i = 0; i < data.length; i++){
-						var obj = data[i];
-						WS.Body.div(".user-specific", "User data: " + JSON.stringify(obj))
-					}
-				})
+					ustor.all("*", function(data){
+						var data = JSON.parse(data);
+						for (var i = 0; i < data.length; i++){
+							var obj = data[i];
+							WS.Body.div(".user-specific", "User data: " + JSON.stringify(obj))
+						}
+					})
 
+				}
 			});
 
 		</script>

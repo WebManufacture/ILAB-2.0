@@ -19,7 +19,18 @@
 		"File":"./KLAB/KLabServer.js",
 		"basepath": "./",
 		"State":"working"	
-	}, 
+	},
+	{
+		"id":"HLAB",
+		"HTTP":"hlab.web-manufacture.net",
+		"Host":"hlab.web-manufacture.net",
+		"Process":"isolated",
+		"Type" : "proxied",
+		"Frame":"./ILAB/Servers/ManagedServer", 
+		"File":"./hlab/HLabServer.js",
+		"basepath": "./HLAB/STM8",
+		"State":"working"	
+	},
 	{
 		"id":"ILAB",
 		"HTTP":"ilab.web-manufacture.net",
@@ -38,7 +49,7 @@
 		
 	{"id":"SecureServer", "Host":"security.web-manufacture.net","Process":"isolated", "Type":"proxied", "Frame":"ILAB/Servers/ProxiedServer", "Storage":"./ILAB/Storage/AuthStorage.json", "File":"./ILAB/Servers/AuthServer.js","State":"working"},
 	
-	{"id":"StorageServer", "Host":"storage.web-manufacture.net", "Type":"proxied", "Process":"isolated", "Frame":"ILAB/Servers/ProxiedServer", "Storage":"./ILAB/Storage/Server.json", "File":"ILAB/Servers/StorageServer.js","State":"working"},
+	{"id":"StorageServer", "Host":"storage.web-manufacture.net", "Type":"proxied", "Process":"isolated", "Frame":"ILAB/Servers/ProxiedServer", "AuthStorage":"./ILAB/Storage/AuthStorage.json", "Storage":"./ILAB/Storage/Server.json", "File":"ILAB/Servers/StorageServer.js","State":"working"},
 	
 	{"id":"WebManufacture",
 	 "Host":"web-manufacture.net",
@@ -51,8 +62,6 @@
 	 "basepath":"./PROJECTS/WebManufacture",
 	 "State":"working"},
 
-	{"id":"HLAb","Host":"hlab.web-manufacture.net","Process":"internal","File":"./ILAB/Servers/StaticServer.js", "Type":"managed","basepath":"./HLAB","DefaultFile":"index.htm","State":"working"},
-	
 	{"id":"RoboPlatform","Host":"roboplatform.web-manufacture.net","Process":"internal","File":"./ILAB/Servers/StaticServer.js", "Type":"proxied","basepath":"./HLAB/RoboPlatform","DefaultFile":"index.htm","State":"working"},
 	
 	{"id":"Identification", "Host":"identification2.web-manufacture.net", "Frame":"./ILAB/Servers/ManagedServer", "Path":"/identification/>","Process":"isolated", "Type":"managed", "File":"./PROJECTS/identification/ServerIPC.js","State":"idle"},
