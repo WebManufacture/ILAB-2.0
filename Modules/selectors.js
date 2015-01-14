@@ -1,14 +1,16 @@
+
+
 Selector = function(str){
 	this.source = "";
 	if (str && typeof str == "string") {
 		var item;
 		//while (str.indexOf('') > 0)
-		var regex = new RegExp(Selector._regex, "ig");
 		if (str.start("/") || str.start(">")){
 			this.isRoot = true;
-			this.type = "root";
 			this.source = str;
+			str = str.substr(1);
 		}
+		var regex = new RegExp(Selector._regex, "ig");
 		while((item = regex.exec(str)) != null){
 			if (item[1] == ""){
 				this._add(item[2], item[3]);
@@ -161,6 +163,9 @@ Selector.Parse = function(txt){
 		return items;
 	}	
 }
+
+
+Selector.InternalProperties = "_intID,_parentID,childs,follow,next,id,type,tags,classes";
 
 Selector._rootNode = new Selector("root");
 

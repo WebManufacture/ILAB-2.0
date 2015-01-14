@@ -9,16 +9,16 @@ var Auth = require(Path.resolve("./ILAB/Modules/Auth.js"));
 
 
 StorageServer = function(config, router){
-	var userStorages = {};
-	var sessionStorages = {};
-	var siteStorages = {};
+	this.userStorages = {};
+	this.sessionStorages = {};
+	this.siteStorages = {};
+	this.storagesPath = Path.dirname(config.Storage);
 	this.ServerStorage = new Storage(config.Storage, true);
-	this.auth = Auth(config);
+	this.auth = Auth(config.AuthStorage);
 };
 	
 StorageServer.prototype = {
 	GET : function(req, res, url, fullData){
-		res.setHeader("Access-Control-Allow-Headers", "auth-parameters");
 		function finish(code, text, ctype){
 			if (typeof(text) != 'string'){
 				text = JSON.stringify(text);
@@ -53,10 +53,8 @@ StorageServer.prototype = {
 			return;
 		}
 		finish(200, storage.layers);
-	},
-	
-	POST : function(req, res, url, fullData){
-		res.setHeader("Access-Control-Allow-Headers", "auth-parameters");
+	},	
+	POST : function(req, res, url, fullData){		
 		function finish(code, text, ctype){
 			if (typeof(text) != 'string'){
 				text = JSON.stringify(text);
@@ -88,7 +86,14 @@ StorageServer.prototype = {
 		if (fullData){
 			var data = JSON.parse(fullData);
 		}
-		var storage = this._getStorage(req, url);
+		try{
+			var storage = this._getStorage(req, url);
+		}
+		catch(err){
+			console.error(JSON.stringify(err, ['stack', 'message', 'inner']));
+			finish(500, JSON.stringify(err, ['stack', 'message', 'inner']), "text/json");
+			return;
+		}
 		if (!storage){
 			finish(403, "You are have no rights for use this storage!");
 			return;
@@ -120,14 +125,23 @@ StorageServer.prototype = {
 	
 	_getStorage : function(req, url){
 		console.log(url.pathname);
-		var cookie = req.headers["auth-parameters"];
-		var serv = this;
-		console.log(cookie);
+		var cookie = url.query["auth-parameters"];
+		if (cookie){
+			try{
+				cookie = JSON.parse(cookie);
+			}
+			catch(e){
+				cookie = null;
+				console.error("Cannot parse cookie!");
+				console.log(cookie);
+			}
+		} 
+		var serv = this;		
 		if (url.pathname == "/Session/"){
 			if (cookie){
-				var user = JSON.parse(cookie);
+				var user = cookie;
 				var skey = user.SessionKey;
-				if (!this.auth.GetSession(skey)){
+				if (!this.auth.GetUserBySession(skey)){
 					if (this.sessionStorages[skey]){
 						Storage.Delete(this.sessionStorages[skey]);
 						delete this.sessionStorages[skey];
@@ -136,9 +150,9 @@ StorageServer.prototype = {
 				}
 				else{
 					if (!this.sessionStorages[skey]){
-						var storage = this.sessionStorages[skey] = new Storage("./Storage/" + skey + ".json", true);
+						var storage = this.sessionStorages[skey] = new Storage(this.storagesPath + "/Sessions/" + skey + ".json", true);
 						function checkStorage(){
-							if (!serv.auth.GetSession(skey)){
+							if (!serv.auth.GetUserBySession(skey)){
 								Storage.Delete(serv.sessionStorages[skey]);
 								delete serv.sessionStorages[skey];
 							}
@@ -157,7 +171,7 @@ StorageServer.prototype = {
 			var site = req.getHeader("Origin");			
 			if (site){
 				if (!this.siteStorages[site]){
-					var storage = this.siteStorages[site] = new Storage("./Storage/" + site.replace(/\//ig, "").replace(/:/ig, "-") + ".json", true);
+					var storage = this.siteStorages[site] = new Storage(this.storagesPath + "/Sites/" + site.replace(/\//ig, "").replace(/:/ig, "-") + ".json", true);
 				}
 				return this.siteStorages[site];
 			}
@@ -165,14 +179,18 @@ StorageServer.prototype = {
 		}
 		if (url.pathname == "/User/"){
 			if (cookie){
-				var userParam = JSON.parse(cookie);
-				var user = this.auth.GetSession(userParam.SessionKey);
-				if (user && userParam.Login == user.login){
+				var userParam = cookie;
+				var user = this.auth.GetUser(userParam.Login);
+				if (user && userParam.SessionKey == user.sessionKey){
 					if (!this.userStorages[user.login]){
-						var storage = this.userStorages[user.login] = new Storage("./Storage/usr_" + user.login + ".json", true);
+						var storage = this.userStorages[user.login] = new Storage(this.storagesPath + "/Users/usr_" + user.login + ".json", true);
 					}					
 					return this.userStorages[user.login];
-				}				
+				}else{
+					console.warn("Unauthorized access to the UserStorage!");
+					console.log(userParam);
+					console.log(user);
+				}		
 			}
 			return null;
 		}

@@ -210,7 +210,7 @@ FilesRouter.prototype._POST = FilesRouter.prototype._PUT = function(context){
 	var files = this;
 	var writeFunc = function(){
 		info("Writing " + fpath);
-		fs.writeFile(paths.resolve(fpath), fullData, 'utf8', function(err, result){
+		fs.writeFile(paths.resolve(fpath), fullData, 'binary', function(err, result){
 			if (err){
 				context.finish(500, "File " + fpath + " write error " + err);
 				Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.basePath, ""), err, files.basePath);
@@ -221,6 +221,14 @@ FilesRouter.prototype._POST = FilesRouter.prototype._PUT = function(context){
 			context.continue();
 		});	
 	}
+	/*var writable = fs.createWriteStream(fpath);		
+		context.req.pipe(writable);
+		writable.on('finish', function() {
+			context.finish(200);
+			context.continue();
+		});*/
+		
+		
 	if (context.data == undefined){
 		context.req.on("data", function(data){
 			fullData += data;		
