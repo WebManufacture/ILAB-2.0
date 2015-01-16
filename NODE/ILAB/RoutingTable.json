@@ -13,7 +13,7 @@
 		"id":"KLAB",
 		"HTTP":"klab.web-manufacture.net",
 		"Host":"klab.web-manufacture.net",
-		"Process":"isolated",
+		"Process":"internal",
 		"Type" : "proxied",
 		"Frame":"./ILAB/Servers/ManagedServer", 
 		"File":"./KLAB/KLabServer.js",
