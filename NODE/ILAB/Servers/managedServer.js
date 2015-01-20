@@ -9,13 +9,8 @@ try{
 	require(Path.resolve("./ILAB/Modules/ChildProcess.js"));
 	var RouterModule = require(Path.resolve("./ILAB/Modules/Router.js"));
 	require(Path.resolve('./ILAB/Modules/Logger.js'));
-
-	process.on('SIGTERM', function() {
-
-	});
 	
-	
-	ManagedServer = function(){;
+	ManagedServer = function(){
 		var args = {
 			Port: 80
 		};
@@ -24,9 +19,18 @@ try{
 			args = process.argv[2];
 			args = JSON.parse(args);
 		}
-		
+
 		this.Config = args;
 		var serv = this;
+
+
+		process.on('EXITING', function() {
+			if (serv.Stop){
+				serv.Stop();
+			}
+			process.exit();
+		});
+
 		process.on('exit',function(){	
 			if (serv.Stop){
 				serv.Stop();
@@ -35,7 +39,7 @@ try{
 		this.ProcessRequest = function(req, res, url){
 			return serv._ProcessRequest(req, res, url);
 		};
-		
+
 		this.ProcessContext = function(context){
 			return serv._ProcessContext(context);	
 		}

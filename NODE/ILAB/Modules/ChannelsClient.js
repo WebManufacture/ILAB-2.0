@@ -12,8 +12,12 @@ global.SocketChannels = {
 		if (!path) path = '/';
 		sio.serveClient(false);
 		var server = sio.attach(server);
+		console.log("S>>> Channels server on: " + path);
 		sio.of(path).on('connection', function (socket) {
-			console.log("S>>> Channel subscribe: " + path);
+			//console.log("S>>> Channel subscribe: " + path);
+			socket.on("error", function(message){
+				console.log(message);
+			});
 			socket.on("message", function(message){
 				Channels.emit(path, message);
 			});
@@ -23,7 +27,7 @@ global.SocketChannels = {
 			Channels.on(path, handler);			
 			socket.on('disconnect', function (socket) {
 				Channels.clear(path, handler);
-				console.log("S<<< Channel unsubscribe: " + path);
+				//console.log("S<<< Channel unsubscribe: " + path);
 			});	
 		});
 	}
@@ -51,17 +55,26 @@ HttpChannelsClient = {
 				response.write(JSON.stringify(params) + "\n");
 			}
 			catch(e){
-				response.write(JSON.stringify(e) + "\n");
+				try{
+					response.write(JSON.stringify(e) + "\n");
+				}
+				catch (err){console.error(err);}
 			}
 		}
 		request.on("close", function(){
-			console.log("<< Channel unsubscribe: " + path);
-			Channels.clear(path, handler);
+			//console.log("<< Channel unsubscribe: " + path);
+			try{
+				Channels.clear(path, handler);
+			}
+			catch (err){console.error(err);}
 		});
 		if (Channels.on(path, handler)){
-			console.log(">> Channel subscribe: " + path);
+			//console.log(">> Channel subscribe: " + path);
+			try{
 			response.setHeader("Content-Type", "application/json; charset=utf-8");		
 			context.abort();
+			}
+			catch (err){console.error(err);}
 			return false;
 		}
 		else{		

@@ -379,7 +379,7 @@ RoutingService.PortRouter.prototype = {
 		server.on('connection', function (socket) {
 			//console.log(socket);
 			var path = '/' + socket.namespace.name;
-			console.log("S>>> Channel subscribe: " + path);
+			console.log("S>>> Channel ssssubscribe: " + path);
 			socket.on("message", function(message, data){
 				message = JSON.parse(message);
 				Channels.emit(path + message.path, message.data);
@@ -390,7 +390,7 @@ RoutingService.PortRouter.prototype = {
 			Channels.on(path, handler);			
 			socket.on('disconnect', function (socket) {
 				Channels.clear(path, handler);
-				console.log("S<<< Channel unsubscribe: " + path);
+				console.log("S<<< Channel uuuunsubscribe: " + path);
 			});	
 		});
 	},

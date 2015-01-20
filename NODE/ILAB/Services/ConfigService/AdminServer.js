@@ -22,6 +22,9 @@ AdminServer = {
 		   });
 		   return false;
 		});
+		
+		var serv = this;
+		
 		localRouter.for("Main", "/Nodes/<", NodesRouter);
 		localRouter.for("Main", "/<", Files(config, logger));
 		ILab.ServiceUrl = (config.Host ? (config.Host + (config.Port ? ":" + config.Port : "")) : "") + (config.Path ? config.Path : "");
@@ -29,19 +32,27 @@ AdminServer = {
 	
 	Start : function(server){
 		this.SockServer = useSystem('socket.io').listen(server, { log: false });
+		this.SockServer.on('error', function(err){
+			console.log(">>>Admin socket server error: ");
+			console.error(err);
+		});
 		this.SockServer.on('connection', function (socket) {
 			var path = '/';
 			if (socket.namespace){
 				path += socket.namespace.name;
 			}
-			console.log("S>>> Channel subscribe: " + path);
+			socket.on('error', function (err) {
+				console.log(">>>Admin socket server Channel error: " + path);
+				console.error(err);
+			});
+			//console.log("A>>> Channel subscribe: " + path);
 			var handler = function(data, arg){
 				socket.emit('message', [data, arg]);
 			}
 			Channels.on("/*.node", handler);		
 			socket.on('disconnect', function (socket) {
 				Channels.clear("/*.node", handler);
-				console.log("S<<< Channel unsubscribe: " + path);
+				//console.log("A<<< Channel unsubscribe: " + path);
 			});	
 			socket.on("message", function(message, data){
 				message = JSON.parse(message);
@@ -49,6 +60,13 @@ AdminServer = {
 				Channels.emit(message.path, message.data);
 			});
 		});		
+	},
+	
+	Stop : function(){
+		if (this.SockServer){
+			this.SockServer.close();
+			this.SockServer = null;
+		}		
 	},
 	
 	RedirectSocket : function(context){

@@ -35,6 +35,14 @@ try{
 			return serv._ProcessContext(context);
 		};
 		*/
+		
+		process.on('EXITING', function() {
+			if (serv.HTTPServer){
+				serv.HTTPServer.close();
+			}
+			process.exit();
+		});
+		
 		process.on('exit',function(){	
 			if (serv.HTTPServer){
 				serv.HTTPServer.close();
@@ -389,7 +397,6 @@ try{
 		this.watcher = fs.watch(Path.resolve(serv.basePath), {}, function(event, fname){
 			if (typeof (fname) == 'string'){
 				fname = serv.FormatPath(fname);
-				console.log(serv.Config.DefaultTemplate);
 				if (fname == serv.Config.DefaultTemplate){
 					fs.readFile(serv.Config.DefaultTemplate, 'utf8', function(err, result){
 						if (!err){
@@ -403,8 +410,7 @@ try{
 				}
 			}
 			else{
-				console.log(event);
-				console.log(fname);
+				
 			}
 		});
 		process.on("exit", function(){
@@ -514,6 +520,7 @@ try{
 		gif : "images/gif",
 		jpg : "images/jpeg",
 		bmp : "images/bmp",
+		zip : "application/zip",
 		ttf : "font/truetype; charset=utf-8"
 	};
 
