@@ -227,6 +227,7 @@ Storage = function(file, createIfNotExists){
 	function Watch(){
 		if (!stor.watching){
 			this.watcher = fs.watch(file, {}, function(event, fname){
+				console.log("Reloading storage: " + fname + " " + event);
 				if (!stor.selfChange && !stor.closed && !stor.reloading){
 					stor.Reload();
 				}

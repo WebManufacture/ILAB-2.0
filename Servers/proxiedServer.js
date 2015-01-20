@@ -12,7 +12,7 @@ try{
 	var RouterModule = require(Path.resolve("./ILAB/Modules/Router.js"));
 	require(Path.resolve('./ILAB/Modules/Logger.js'));
 		
-	ProxiedServer = function(){;
+	ProxiedServer = function(){
 		var args = {
 			Port: 80
 		};
@@ -23,6 +23,14 @@ try{
 		
 		this.Config = args;
 		var serv = this;
+		
+		process.on('EXITING', function() {
+			if (serv.Stop){
+				serv.Stop();
+			}
+			process.exit();
+		});
+							   
 		process.on('exit',function(){	
 			if (serv.Stop){
 				serv.Stop();

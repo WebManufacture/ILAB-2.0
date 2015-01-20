@@ -307,9 +307,9 @@ for (var item in NodeProto){
 ILab = {};
 
 ILab.Init = function(){
-	process.setMaxListeners(100);
+	process.setMaxListeners(1000);
 	console.log(process.cwd().prompt);
-	var cfg = { ver: "0.1.4", Port : 80, PortStart : 7000, routingFile: "./ILAB/RoutingTable.json" };
+	var cfg = { ver: "0.1.5", Port : 80, PortStart : 7000, routingFile: "./ILAB/RoutingTable.json" };
 	
 	for (var i = 2; i < process.argv.length; i++){
 		var arg = process.argv[i];
@@ -389,6 +389,11 @@ ILab.Init = function(){
 		node.url = "http://" + itemPath;
 		console.log((" '" + (item.Frame ? item.Frame  + " " : "") + item.File + "'").grey);
 	}
+	
+	proxy.on('error', function(err) {
+	  console.log(err)
+	});
+	
 	ILab.InitNodes(cfg);
 	ILab.Start();
 };
@@ -571,10 +576,13 @@ ILabRouter.ManagedProcess = function(req, res, url){
 ILabRouter.AttachSocketListener = function(server){
 	//sio.serveClient(false);
 	server = require('socket.io').listen(server);
+	console.log(">>> Channels Socket Server attached to: " + server.port);
 	server.on('connection', function (socket) {
 		//console.log(socket);
 		var path = '/' + socket.namespace.name;
-		console.log("S>>> Channel subscribe: " + path);
+		socket.on("error", function(err){
+			console.error(err);
+		});
 		socket.on("message", function(message, data){
 			message = JSON.parse(message);
 			Channels.emit(path + message.path, message.data);
@@ -585,7 +593,6 @@ ILabRouter.AttachSocketListener = function(server){
 		Channels.on(path, handler);			
 		socket.on('disconnect', function (socket) {
 			Channels.clear(path, handler);
-			console.log("S<<< Channel unsubscribe: " + path);
 		});	
 	});
 };

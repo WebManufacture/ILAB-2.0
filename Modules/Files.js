@@ -162,16 +162,22 @@ FilesRouter.prototype._SEARCH = function(context){
 	fs.readdir(paths.resolve(fpath), function(err, files){
 		if (err){
 			context.finish(500, "readdir " + fpath + " error " + err);
+			context.continue();
 			return;
 		}
-		context.setHeader("Content-Type", "application/json; charset=utf-8");
-		for (var i = 0; i < files.length; i++){
-			var fname = files[i];			
-			files[i] = fs.statSync(fpath + "\\" + fname);
-			files[i].name = fname;
-			files[i].fileType = files[i].isDirectory() ? "directory" : files[i].isFile() ? "file" : "unknown";
+		try{
+			context.setHeader("Content-Type", "application/json; charset=utf-8");
+			for (var i = 0; i < files.length; i++){
+				var fname = files[i];			
+				files[i] = fs.statSync(fpath + "\\" + fname);
+				files[i].name = fname;
+				files[i].fileType = files[i].isDirectory() ? "directory" : files[i].isFile() ? "file" : "unknown";
+			}
+			context.finish(200, JSON.stringify(files));
 		}
-		context.finish(200, JSON.stringify(files));
+		catch(error){
+			context.finish(500, "readdir " + fpath + " error " + error);
+		}
 		context.continue();
 	});
 	return false;

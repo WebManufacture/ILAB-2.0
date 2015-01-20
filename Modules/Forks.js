@@ -117,7 +117,7 @@ Fork.prototype = {
 		}
 		var argsA = [JSON.stringify(args)];
 		argsA.push(JSON.stringify(this.subscribers));
-		var cp = this.process = ChildProcess.fork(this.path, argsA, { silent: true, cwd: cwd, env : { workDir: wd, isChild : true } });
+		var cp = this.process = ChildProcess.fork(this.path, argsA, { silent: false, cwd: cwd, env : { workDir: wd, isChild : true } });
 		this.logger.debug("fork started " + this.path);
 		this.code = Fork.STATUS_WORKING;	
 		if (callback){

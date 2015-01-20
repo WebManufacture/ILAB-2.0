@@ -4,10 +4,13 @@ if (global.Channels){
 	process.on("message", function(pmessage){
 		if (pmessage == 'EXITING'){
 			process.emit("EXITING");
-			setTimeout(function(){
+			var tm = setTimeout(function(){
 				console.log("CHILD PROCESS EXITED BY TIMEOUT 4s !".warn);
 				process.exit();
 			}, 4000);
+			process.on("exit", function(){
+				clearTimeout(tm);
+			});
 		}
 		if (typeof pmessage == "object"){
 			if (pmessage.type && pmessage.type == "channelControl" && pmessage.pattern){
