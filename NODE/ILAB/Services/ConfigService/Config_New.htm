@@ -381,7 +381,7 @@
 					send("/" + item.key + ".delete");
 				}
 					
-				ConfManager.Channel = new Net.HMCH("./");
+				//ConfManager.Channel = new Net.HMCH("./");
 				Channels.on("/log", function(message,arg){
 					Notify.ShowMessage(arg);
 				});
