@@ -71,4 +71,6 @@ ServicesManagerObj.prototype = {
 	}
 }
 
-module.exports = .ServicesManager;
+module.exports = function(){
+	return new ServicesManagerObj.apply(this, arguments);
+}

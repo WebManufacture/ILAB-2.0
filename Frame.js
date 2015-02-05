@@ -29,6 +29,13 @@ global.useModule = Frame.useModule = function(path){
 	return require(Path.resolve(Frame.ModulesPath + path));
 };
 
+global.useService = Frame.useService = function(path){
+	if (path.indexOf(".js") != path.length - 3){
+	  path += ".js";
+	}
+	return require(Path.resolve(Frame.ServicesPath + path));
+};
+
 global.useSystem = Frame.useSystem = function(path){
 	return require(Path.resolve(Frame.NodeModulesPath + path));
 };
