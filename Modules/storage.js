@@ -1,5 +1,6 @@
 var fs = require('fs');
 var Path = require('path');
+var util = require('util');
 var EventEmitter = require("events").EventEmitter;
 
 StorageLayer = function(objects){
@@ -305,7 +306,14 @@ Inherit(Storage, EventEmitter, {
 			}
 		}
 	},
-	
+
+    LoadData : function(objects){
+        if (util.isArray(objects)){
+            return this._loadStore;
+        }
+        return this._loadStore([objects]);
+    },
+
 	_save : function(){
 		if (this.file && !this.closed){
 			var stor = this;
@@ -411,11 +419,13 @@ Inherit(Storage, EventEmitter, {
 	},
 
 	get : function(selector, data){
-		if (this.layers.length == 0) return [];
-		selector = this._formatObject(selector, data);
-		if (!selector) selector = "*";
-		var layerNum = 0;
-		var items = this._getFromLayer(layerNum, selector);
+        var items = null;
+        if (this.layers.length > 0) {
+            selector = this._formatObject(selector, data);
+            if (!selector) selector = "*";
+            var layerNum = 0;
+            items = this._getFromLayer(layerNum, selector);
+        }
 		return (items && items.length > 0) ? items[0] : null;
 	},
 	
@@ -575,6 +585,8 @@ Inherit(Storage, EventEmitter, {
 		return count;
 	}
 });
+
+useModule("Selectors.js");
 
 StorageObjectPrototype = {
 	is: Selector.prototype.is,

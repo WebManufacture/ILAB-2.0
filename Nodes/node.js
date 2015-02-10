@@ -7,6 +7,7 @@ function Node(parentNode, id){
 	this._state = 0;
 	this.parentNode = parentNode;
 	this.type = Node.Type;
+    this.logger = Logger;
 	this.setMaxListeners(100);
 	if (id) this.id = id.toLowerCase();
 };
@@ -56,7 +57,7 @@ Inherit(Node, EventEmitter, {
 		}
 	
 		if (!config){
-			console.error("CONFIG CALL WITHOUT ARGUMENTS!");
+			Logger.warn("CONFIG CALL WITHOUT ARGUMENTS!");
 			return;
 		}
 		this.config = config;
