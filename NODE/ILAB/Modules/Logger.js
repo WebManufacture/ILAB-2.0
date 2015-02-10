@@ -14,6 +14,10 @@ function Logger(ChannelPrefix, useConsole, level){
 	}
 }
 
+Logger.setLogLevel = function(ll){
+    Logger.level  = ll;
+}
+
 Logger.Levels = {
 	fatal : 1,
 	error : 2,
@@ -176,7 +180,12 @@ Logger.prototype = {
 			console.log(value);
 		}
 		return true;
-	}
+    },
+
+    setLogLevel : function(lev){
+        this.level = lev;
+    }
 }
+
 
 module.exports = Logger;

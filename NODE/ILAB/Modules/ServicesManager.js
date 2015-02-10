@@ -5,6 +5,29 @@ function ServicesManagerObj(){
 }
 
 ServicesManagerObj.prototype = {
+    Load : function(){
+
+    if (!Frame.NodesByTypes){
+        Frame.NodesByTypes = {};
+        var nodes = fs.readdirSync(Path.resolve(Frame.NodesPath));
+        for (var i = 0; i < nodes.length; i++){
+            try{
+                var node = require(Path.resolve(Frame.NodesPath + nodes[i]));
+                if (node && node.Type){
+                    Frame.NodesByTypes[node.Type] = node;
+                    Frame.Config.prototypes[node.Type] = node;
+                    if (!Frame.isChild){
+                        logger.info("Support node type: %marine;{0}", node.Type);
+                    }
+                }
+            }
+            catch(error){
+                logger.error("Node type load error: %error;{0} : {1}", nodes[i], error);
+            }
+        }
+    }
+    },
+
 	GetServiceContract : function(serviceName){
 		var me = this;
 		if (IsServiceLoaded(serviceName)){
@@ -71,6 +94,6 @@ ServicesManagerObj.prototype = {
 	}
 }
 
-module.exports = function(){
-	return new ServicesManagerObj.apply(this, arguments);
+module.exports = function(arg){
+	return new ServicesManagerObj(arg);
 }
