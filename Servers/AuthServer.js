@@ -111,13 +111,13 @@ AuthServer.prototype = {
 		try{
 			var selector = url.query.selector;
 			if (action == "all"){
-				finish(200, JSON.stringify(auth.all(selector, data)));
+				finish(200, JSON.stringify(auth.all(selector, data)),"text/json");
 				return;
 			}
 			if (action == "get"){
 				var obj = auth.get(selector, data);
 				if(obj){
-					finish(200, JSON.stringify(obj));
+					finish(200, JSON.stringify(obj),"text/json");
 				}
 				else{
 					finish(404, "null", "text/json");
@@ -127,7 +127,7 @@ AuthServer.prototype = {
 			if (action == "add"){
 				var obj = auth.add(selector, data);
 				if(obj){
-					finish(200, JSON.stringify(obj));
+					finish(200, JSON.stringify(obj),"text/json");
 				}
 				else{
 					finish(404, "null", "text/json");
@@ -137,7 +137,7 @@ AuthServer.prototype = {
 			if (action =="del"){
 				var obj = auth.del(selector, data);
 				if(obj){
-					finish(200, JSON.stringify(obj));
+					finish(200, JSON.stringify(obj),"text/json");
 				}
 				else{
 					finish(404, "null", "text/json");
@@ -147,7 +147,7 @@ AuthServer.prototype = {
 			if (action == "set"){
 				var obj = auth.set(selector, data);
 				if(obj){
-					finish(200, JSON.stringify(obj));
+					finish(200, JSON.stringify(obj),"text/json");
 				}
 				else{
 					finish(404, "null", "text/json");
