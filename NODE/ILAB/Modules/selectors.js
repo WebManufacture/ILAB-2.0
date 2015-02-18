@@ -83,9 +83,10 @@ Selector.prototype = {
 		if (this.type && this.type != "*" && selector.type != this.type) return false;	
 		if (this.classes){
 			if (selector.tags){
+				var tags = " " + selector.tags + " ";
 				for (var i = 0; i < this.classes.length; i++){
 					var cls = this.classes[i];
-					if (!selector.tags.contains(" " + cls +  " ")){ return false; }
+					if (!tags.contains(" " + cls +  " ")){ return false; }
 				}
 			}
 			else{
