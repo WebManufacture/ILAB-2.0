@@ -72,10 +72,10 @@ Inherit(ManagedNode, global.Node, {
 	unload : function(){
 		var self = this;
 		var result = true;
+        this.unSubscribeAll();
 		if (ManagedNode.base.unload){
 			result = ManagedNode.base.unload.call(this);
 		}
-		this.unSubscribeAll();
 		return result;
 	},
 	
