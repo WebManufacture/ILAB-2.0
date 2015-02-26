@@ -136,14 +136,13 @@ Frame._initFrame = function () {
 
         var config = process.argv[2];
 
-        var configServiceType = "Direct";
+        var configServiceType = "DirectConfigService";
 
         try {
             config = JSON.parse(config);
             if (config.cwd) {
                 process.chdir(config.cwd)
             }
-            ;
             if (config.file) {
                 configServiceType = "FileConfigService";
                 config = config.file;
@@ -234,6 +233,7 @@ Frame._initFrame = function () {
          });
          });
          */
+
         if (!config.Modules) config.Modules = [];
         logger.debug("Modules in " + Frame.ModulesPath);
         Frame.Modules = [];

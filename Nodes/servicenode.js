@@ -3,6 +3,7 @@ var Path = require('path');
 useNodeType("node.js");
 useNodeType("managednode.js");
 useModule("logger.js");
+useModule("Channels.js");
 var Storage = useModule("Storage.js");
 
 function ServiceNode (parentNode, item){
@@ -46,9 +47,9 @@ Inherit(ServiceNode, ManagedNode, {
 	
 	load : function(){
 		if (ServiceNode.base.load){
-			return ServiceNode.base.load.apply(this, arguments);
-		}		
-		Frame.Services.add(this);
+            return ServiceNode.base.load.apply(this, arguments);
+        }
+        Frame.Services.add(this);
 		return true;
 	},
 	
@@ -59,6 +60,10 @@ Inherit(ServiceNode, ManagedNode, {
 		}		
 		return true;
 	},
+
+    getContract : function(){
+        return new ServiceContract();
+    },
 
 	RequireService : function(selector){
 		var service = Frame.useService(selector);
@@ -99,15 +104,13 @@ Inherit(ServiceNode, ManagedNode, {
 			this.error("Required service " + service + " tried to unconfigure, but not found!");
 		}
 		return null;
-	},
+	}
 });
 
-function ServiceManager(){
-	
-};
+global.ServiceContract = function(){
 
-ServiceManager.prototype = {
-	
 }
+
+Inherit(ServiceContract, Channel);
 
 module.exports = ServiceNode;

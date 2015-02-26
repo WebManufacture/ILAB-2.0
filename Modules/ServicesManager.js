@@ -1,4 +1,5 @@
 var fs = require('fs');
+var Path = require('path');
 
 function ServicesManagerObj(){
 	
@@ -6,25 +7,7 @@ function ServicesManagerObj(){
 
 ServicesManagerObj.prototype = {
     Load : function(){
-        if (!Frame.NodesByTypes){
-            Frame.NodesByTypes = {};
-            var nodes = fs.readdirSync(Path.resolve(Frame.NodesPath));
-            for (var i = 0; i < nodes.length; i++){
-                try{
-                    var node = require(Path.resolve(Frame.NodesPath + nodes[i]));
-                    if (node && node.Type){
-                        Frame.NodesByTypes[node.Type] = node;
-                        Frame.Config.prototypes[node.Type] = node;
-                        if (!Frame.isChild){
-                            logger.info("Support node type: %marine;{0}", node.Type);
-                        }
-                    }
-                }
-                catch(error){
-                    logger.error("Node type load error: %error;{0} : {1}", nodes[i], error);
-                }
-            }
-        }
+
     },
 
 	GetServiceContract : function(serviceName){
@@ -40,18 +23,7 @@ ServicesManagerObj.prototype = {
 			this.LoadService(service);
 		}
 	},
-	
-	ConfigureService : function(name, serviceConfig){
-		if (IsServiceAvailable(name)){
-			if (IsServiceLoaded(name)){
-				this.services[name].Configure(serviceConfig);
-			}
-			else{
-				this.servicesConfiguration[name] = serviceConfig;
-			}
-		}
-	},
-	
+
 	GetAvailableServices : function(){
 		var services = [];
 		for (var s in this.services){
@@ -70,18 +42,20 @@ ServicesManagerObj.prototype = {
 		return this.services[name] != undefined && this.services[name] != null;
 	},
 		
-	LoadService : function(name){
+	LoadService : function(name, config){
 		if (IsServiceLoaded(name)) return this.services[name];
 		if (IsServiceAvailable(name)){
-			var service = this.services[name] = require(Path.resolve(Frame.ModulesPath + path));
-			service.Init();
-			if (service && this.servicesConfiguration[name]){
-				service.Configure(this.servicesConfiguration[name]);
-			}
-			service.Load();
+			var service = this.services[name] = Frame.useService(name);
+            if (service) {
+                service.Init();
+                if (config) {
+                    service.Configure(config);
+                }
+                service.Load();
+            }
 			return service;
 		};
-		return false;
+		return null;
 	},
 	
 	UnloadService : function(name){
