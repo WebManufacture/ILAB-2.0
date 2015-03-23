@@ -82,6 +82,14 @@ StorageLayer = function(objects){
 			}
 			return arr;
 		},
+		
+		_filterByParameters: function(selector, items){ // Fenrir 21022015 / Фильтр по параметрам
+			var arr = [];
+			for (var i = 0; i < items.length; i++){
+				if (selector.is(items[i])) arr.push(items[i]);
+			}
+			return arr;
+		}, // Fenrir 21022015 /
 
 		_getByClasses: function(selector, items){
 			if (!items || !selector) return null;
@@ -135,7 +143,10 @@ StorageLayer = function(objects){
 			else{
 				var candidates = this.objects;	
 			}
-			return this._filterByClasses(selector, candidates);
+			//return this._filterByClasses(selector, candidates); // Fenrir 21022015
+			candidates = this._filterByClasses(selector, candidates);
+			candidates = this._filterByParameters(selector, candidates);
+			return candidates; // Fenrir 21022015 /
 		},
 
 		all : function(selector, callback){

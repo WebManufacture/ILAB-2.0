@@ -109,7 +109,7 @@ StorageServer.prototype = {
 			{
 				var obj = storage[action](selector, data);
 				if(obj){
-					finish(200, JSON.stringify(obj));
+					finish(200, obj);
 				}
 				else{
 					finish(404, "null", "text/json");
