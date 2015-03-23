@@ -63,7 +63,22 @@
 						storage.add(JSON.parse(JSON.stringify(obj)));
 					}
 					console.log(storage);
+					storage.add({name:"Fenrir", type : "message", text: "Test1",tags: "get"});
+					storage.add({name:"Fenrir", type : "message", text: "Test2",tags: "get"});
+					storage.add({name:"Kiba", type : "message", text: "Test3"});
+					storage.all("message.get@name>=Fenrir", OutputMessages);
 				});
+				function OutputMessages(data){
+					var outp = DOM.get("body");
+					outp.all("div").del();
+					var mesData = data;
+					for(var i=0; i<mesData.length; i++){
+						var mes = "" + mesData[i].name + ": " + mesData[i].text;
+						outp.div(".message",mes);
+						//newDiv.text = mesData[i].name + ": " + mesData[i].text;
+					
+					}
+				}
 
 		</script>
 	</body>

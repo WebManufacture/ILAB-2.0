@@ -66,7 +66,7 @@
 	
 	{"id":"Identification", "Host":"identification2.web-manufacture.net", "Frame":"./ILAB/Servers/ManagedServer", "Path":"/identification/>","Process":"isolated", "Type":"managed", "File":"./PROJECTS/identification/ServerIPC.js","State":"idle"},
 	
-	{"id":"CncPlatform", "Host":"cnc.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"CncTable.htm","basepath":"./HLAB/CncController", "File":"./ILAB/Servers/StaticServer.js","State":"idle"},
+	{"id":"CncPlatform", "Host":"cnc.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"CncTable.htm","basepath":"./HLAB/CncController", "File":"./ILAB/Servers/StaticServer.js","State":"working"},
 	
 	{"id":"VideoHost", "Host":"video.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"Index.htm","basepath":"./Projects/VideoNet", "File":"./ILAB/Servers/StaticServer.js","State":"idle"},
 	

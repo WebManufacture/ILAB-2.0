@@ -46,8 +46,26 @@ Selector.prototype = {
 			this.meta[entity] = true;
 		}
 		if (symbol == "@"){
-			var keyValue = entity.split("=");
-			this[keyValue[0]] = keyValue.length > 1 ? keyValue[1] : null;
+			if (entity.contains("==") || entity.contains(">=") || entity.contains("<=") || entity.contains("*=")){
+				if (!this.conditions) this.conditions = []; 
+				var keyValue = entity.split("=");
+				var name = keyValue[0];
+				var value = keyValue[1];
+				if(entity.contains("==")) {// Fenrir 21022015 / Добавил т.к. неправильно определяло имя и символ
+					var es = "=";
+					var name = name.substr(0, name.length);
+					value = keyValue[2];
+				}
+				else{
+					var es = name[name.length - 1];
+					var name = name.substr(0, name.length - 2);//Fenrir 21022015 / var name = name.substr(0, name.length - 2);
+				} // Fenrir 21022015 /
+				this.conditions.push({name : name, value : value, condition : es})
+			}
+			else{
+				var keyValue = entity.split("=");
+				this[keyValue[0]] = keyValue.length > 1 ? keyValue[1] : null;
+			}
 		}
 		if (symbol == "."){
 			if (!this.classes) this.classes = [];
@@ -78,12 +96,12 @@ Selector.prototype = {
 		}
 	},
 	
-	is : function(selector){
-		if (this.id && selector.id != this.id) return false;	
-		if (this.type && this.type != "*" && selector.type != this.type) return false;	
+	is : function(obj){
+		if (this.id && obj.id != this.id) return false;	
+		if (this.type && this.type != "*" && obj.type != this.type) return false;	
 		if (this.classes){
-			if (selector.tags){
-				var tags = " " + selector.tags + " ";
+			if (obj.tags){
+				var tags = " " + obj.tags + " ";
 				for (var i = 0; i < this.classes.length; i++){
 					var cls = this.classes[i];
 					if (!tags.contains(" " + cls +  " ")){ return false; }
@@ -95,8 +113,17 @@ Selector.prototype = {
 		}
 		if (this.meta){
 			for (var item in this.meta){
-				if (!selector.meta[item]){ return false; }
+				if (!obj.meta[item]){ return false; }
 			}
+		}
+		if (this.conditions)
+		for (var i = 0; i < this.conditions.length; i++){
+			var c = this.conditions[i];
+			var val = obj[c.name];
+			if (c.condition == ">" && c.value < val) return false;	// Fenrir 210215 / c.val ----> c.value		
+			if (c.condition == "<" && c.value > val) return false;	// Fenrir 210215 / c.val ----> c.value		
+			if (c.condition == "=" && c.value != val) return false;	// Fenrir 210215 / c.val ----> c.value		
+			if (c.condition == "*" && !c.value.contains(val)) return false; // Fenrir 210215 / c.val ----> c.value
 		}
 		return true;
 	},
