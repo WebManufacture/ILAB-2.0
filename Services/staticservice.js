@@ -21,10 +21,10 @@ StaticFilesService.MimeTypes = {
 	js : "text/javascript; charset=utf-8",
 	css : "text/css; charset=utf-8",
 	json : "text/json; charset=utf-8",
-	png : "images/png",
-	gif : "images/gif",
-	jpg : "images/jpeg",
-	bmp : "images/bmp",
+	png : "image/png",
+	gif : "image/gif",
+	jpg : "image/jpeg",
+	bmp : "image/bmp",
 	ttf : "font/truetype; charset=utf-8"
 };
 	
