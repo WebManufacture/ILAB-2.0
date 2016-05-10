@@ -13,11 +13,22 @@
 		"id":"KLAB",
 		"HTTP":"klab.web-manufacture.net",
 		"Host":"klab.web-manufacture.net",
-		"Process":"internal",
+		"Process":"isolated",
 		"Type" : "proxied",
 		"Frame":"./ILAB/Servers/ManagedServer", 
 		"File":"./KLAB/KLabServer.js",
-		"basepath": "./",
+		"basepath": ".",
+		"State":"working"	
+	},
+	{
+		"id":"Sandbox",
+		"HTTP":"sandbox.web-manufacture.net",
+		"Host":"sandbox.web-manufacture.net",
+		"Process":"isolated",
+		"Type" : "proxied",
+		"Frame":"./ILAB/Servers/ManagedServer", 
+		"File":"./KLAB/KLabServer.js",
+		"basepath": "./PROJECTS/sandbox",
 		"State":"working"	
 	},
 	{
@@ -39,6 +50,17 @@
 		"Type" : "proxied",
 		"File":"./ILAB/Servers/VirtualServer.js", 
 		"State":"idle"
+	},
+	{
+		"id":"RoboPlatform",
+		"HTTP":"roboplatform.web-manufacture.net",
+		"Host":"roboplatform.web-manufacture.net",
+        "Process":"isolated",
+		"Type" : "proxied",
+		"Frame":"./ILAB/Servers/ManagedServer", 
+		"File":"./KLAB/KLabServer.js",
+		"basepath": "D:\\_RoboPlatform",
+		"State":"working"	
 	},
 	
 	{"id":"Services","Host":"services.web-manufacture.net","Process":"internal","File":"./ILAB/Servers/StaticServer.js","Type":"proxied","basepath":"./PROJECTS/services","State":"working"},
@@ -62,8 +84,6 @@
 	 "basepath":"./PROJECTS/WebManufacture",
 	 "State":"working"},
 
-	{"id":"RoboPlatform","Host":"roboplatform.web-manufacture.net","Process":"internal","File":"./ILAB/Servers/StaticServer.js", "Type":"proxied","basepath":"./HLAB/RoboPlatform","DefaultFile":"index.htm","State":"working"},
-	
 	{"id":"Identification", "Host":"identification2.web-manufacture.net", "Frame":"./ILAB/Servers/ManagedServer", "Path":"/identification/>","Process":"isolated", "Type":"managed", "File":"./PROJECTS/identification/ServerIPC.js","State":"idle"},
 	
 	{"id":"CncPlatform", "Host":"cnc.web-manufacture.net","Process":"internal", "Type":"proxied", "DefaultFile":"CncTable.htm","basepath":"./HLAB/CncController", "File":"./ILAB/Servers/StaticServer.js","State":"working"},
@@ -78,7 +98,9 @@
 	 }
 	},
 	
-	{"id":"TcpEmulator", "Process":"isolated", "File":"./PROJECTS/FerroShow/Bridge.js","State":"idle"},
+	{"id":"IffkoServer", "Process":"isolated", "File":"./PROJECTS/Iffko/server.js","State":"idle"},
+	
+	{"id":"Server3", "Process":"isolated", "File":"./PROJECTS/Server3/server.js","State":"idle"},
 			
 	{"id":"SalesForce", "Host":"identification.web-manufacture.net", "Frame":"./ILAB/Services/ManagedServer","Process":"isolated", "Type":"proxied", "File":"./PROJECTS/SalesForce/server.js","State":"idle"}
 ]

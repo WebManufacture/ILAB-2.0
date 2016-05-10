@@ -28,7 +28,8 @@ global.MimeTypes = Files.MimeTypes = {
 	jpg : "image/jpeg",
 	bmp : "image/bmp",
 	svg : "image/svg",
-	ttf : "font/truetype; charset=utf-8"
+	ttf : "font/truetype; charset=utf-8",
+	tap : "application/tap"
 };
 
 global.FilesRouter = function(basepath){
@@ -196,12 +197,12 @@ FilesRouter.prototype._DELETE = function(context){
 		info("Deleting " + fpath);
 		fs.unlink(fpath, function(err, result){
 			if (err){
-				Channels.emit("/file-system." + files.instanceId + "/action.delete.error", fpath.replace(files.basePath, ""), err, files.basePath);
+				Channels.emit("/file-system#" + files.instanceId + ".delete.error/" + fpath, fpath.replace(files.basePath, ""), err, files.basePath);
 				context.finish(500, "Delete error " + fpath + " " + err);	
 				context.continue();
 				return;
 			}			
-			Channels.emit("/file-system." + files.instanceId + "/action.delete", fpath, files.instanceId,files.basePath );
+			Channels.emit("/file-system#" + files.instanceId + ".delete/" + fpath, fpath.replace(files.basePath, ""), files.basePath );
 			context.finish(200, "Deleted " + fpath.replace(files.basePath, ""));			
 			context.continue();
 		});
@@ -220,10 +221,10 @@ FilesRouter.prototype._POST = FilesRouter.prototype._PUT = function(context){
 		fs.writeFile(paths.resolve(fpath), fullData, 'binary', function(err, result){
 			if (err){
 				context.finish(500, "File " + fpath + " write error " + err);
-				Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.basePath, ""), err, files.basePath);
+				Channels.emit("/file-system#" + files.instanceId + ".write.error/" + fpath, fpath.replace(files.basePath, ""), err, files.basePath );
 				return;
 			}
-			Channels.emit("/file-system." + files.instanceId + "/action.write", fpath.replace(files.basePath, ""), files.instanceId, files.basePath);
+			Channels.emit("/file-system#" + files.instanceId + ".write/" + fpath, fpath.replace(files.basePath, ""), fullData );
 			context.finish(200);
 			context.continue();
 		});	

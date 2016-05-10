@@ -141,8 +141,16 @@ try{
 					fullData += data;		
 				});
 				req.on("end", function(){
-					res.statusCode = 200;
-					res.end(JSON.stringify(eval(fullData)));					
+					try{
+    					var result = JSON.stringify(eval(fullData));
+    					res.statusCode = 200;
+					}
+    				catch(err){
+    				    console.error(err);
+    				    var result = err;
+    					res.statusCode = 500;
+    				}
+					res.end(result + "");					
 				});
 				return false;
 			}
@@ -171,7 +179,15 @@ try{
 			fullData += data;		
 		});
 		context.req.on("end", function(){
-			context.finish(200, eval(fullData));
+		    var code = 200;
+			try{
+			    var result = eval(fullData);
+			    context.finish(200, JSON.stringify(result));
+			}
+			catch(err){
+			    console.error(err);
+			    context.finish(500, err + "");
+			}
 			context.continue();
 		});
 		return false;
