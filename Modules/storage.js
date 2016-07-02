@@ -19,22 +19,6 @@ StorageLayer = function(objects){
 	}
 }
 
-	StorageLayer = function(objects){
-		if (!objects) objects = [];
-		this.objects = objects;
-		this.indexes = {};
-		this.internals = {};
-		this.types = {
-
-		};
-		this.classes = {
-
-		};	
-		if (objects){		
-			this._fillIndexes(this.objects);
-		}
-	}
-
 	StorageLayer.prototype = {		
 		_fillIndexes: function(data){
 			if (!data) return;

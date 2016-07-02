@@ -246,14 +246,14 @@ try{
 
 	global.StaticServer.prototype.ProcessTemplates = function(params){
 		if (params.mime == MimeTypes.html){
-			var regex = /<&(\w+)([^>]*)>?(.*)<\/&\1>/ig;
+			var regex = /<:(\w+)([^>]*)>?(.*)<\/:\1>/ig;
 			var match;
 			var processed = true;
 			var fb = new Async.Collector(false, function(results){
 				var resNum = 0;
 				var content = params.content.replace(regex, function(src){
 					if (results[resNum]) return results[resNum++];
-					return src;					
+					return "";					
 				});
 				params.context.finish(params.statusCode, content, params.encoding);
 				params.context.continue();
@@ -276,12 +276,43 @@ try{
 
 	global.StaticServer.ContentProcessors = {
 		file : function(params, value, pconf, callback){
-			var fpath = this.FormatPath(value);
+		    var fpath = params.fpath + "\\" + value;
 			var lf = this.LastFiles[fpath];
 			if (lf){
 				callback(lf);
 			}
 			else{
+			    console.log("Templating " + fpath);
+				fs.readFile(fpath, 'utf8', function(err, result){
+					if (err){
+						callback(err);
+						return;
+					}
+					callback(result);
+				});
+			}
+		},
+		
+		http : function(params, value, pconf, callback){
+		    var fpath = this.FormatPath(value);
+			var lf = this.LastFiles[fpath];
+			if (lf){
+				callback(lf);
+			}
+			else{
+			    console.log("Getting " + fpath);
+			    callback("");
+			}
+		},
+		
+		path : function(params, value, pconf, callback){
+		    var fpath = this.FormatPath(value);
+			var lf = this.LastFiles[fpath];
+			if (lf){
+				callback(lf);
+			}
+			else{
+			    console.log("Templating " + fpath);
 				fs.readFile(fpath, 'utf8', function(err, result){
 					if (err){
 						callback(err);
@@ -379,6 +410,10 @@ try{
 		if (this.Config.basepath.end("\\")){
 			this.Config.basepath = this.Config.basepath.substr(0, this.Config.basepath.length - 1);
 		}
+		var watchPath = (this.Config.basepath + "").toLowerCase();
+		if (watchPath.indexOf(".") == 0){
+		    watchPath = watchPath.replace(".", "");
+		}
 		this.basePath = this.Config.basepath = this.Config.basepath.replace(/\//g, "\\");
 		if (this.Config.DefaultTemplate){
 			var fpath = this.Config.DefaultTemplate = this.FormatPath(this.Config.DefaultTemplate);
@@ -394,6 +429,27 @@ try{
 		this.filesCounter = 0;
 		this._buildFSmap(this.Map, this.basePath);
 		//console.log(this.Config.basepath);
+		console.log("Monitoring " + "/file-system" + watchPath);
+		this.watcher = Channels.on("/file-system" + watchPath, function(event, path){
+			if (typeof (path) == 'string'){
+				var fname = serv.FormatPath(path);
+				if (fname == serv.Config.DefaultTemplate){
+					fs.readFile(serv.Config.DefaultTemplate, 'utf8', function(err, result){
+						if (!err){
+							serv.defaultTemplate = result;
+						}
+					});
+				}
+				else{
+					delete serv.LastFiles[fname];		
+					delete serv.LastTypes[fname];
+				}
+			}
+			else{
+				
+			}
+		});
+		/*
 		this.watcher = fs.watch(Path.resolve(serv.basePath), {}, function(event, fname){
 			if (typeof (fname) == 'string'){
 				fname = serv.FormatPath(fname);
@@ -415,7 +471,7 @@ try{
 		});
 		process.on("exit", function(){
 			serv.watcher.close();
-		});		
+		});*/		
 	};
 
 	global.StaticServer.prototype._buildFSmap = function(map, path){
